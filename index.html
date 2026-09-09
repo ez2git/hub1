@@ -132,6 +132,8 @@ html,body{
 .channel-card.beginner{ background: linear-gradient(120deg,#ff9a3d 0%, #ffcf6b 100%);}
 .channel-card.mid{ background: linear-gradient(120deg,#ff8fb3 0%, #ffc2d6 100%);}
 .channel-card.shop{ background: linear-gradient(120deg,#5c6ad0 0%, #8f9bff 100%);}
+.channel-card.mathbattle{ background: linear-gradient(120deg,#2dd4bf 0%, #86e3d8 100%);}
+.channel-card.mathbattle .channel-label{ color:#0a3a35; }
 .channel-icon{ width:110px; height:110px; flex-shrink:0; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.25));}
 .channel-label{ margin-left:20px; font-size:30px; font-weight:900; color:#2c1c04; text-shadow: 0 2px 0 rgba(255,255,255,.3);}
 .channel-card.shop .channel-label{ color:#1a1d3d; }
@@ -448,6 +450,10 @@ html,body{
           <img class="channel-icon" id="iconShop" alt="ITEM SHOP">
           <div class="channel-label">ITEM SHOP</div>
         </div>
+        <div class="channel-card mathbattle" id="btnMathBattle">
+          <span class="channel-icon" style="font-size:56px; display:flex; align-items:center; justify-content:center;">🧮</span>
+          <div class="channel-label">암산배틀</div>
+        </div>
       </div>
       <div class="ranking-box">
         <div class="ranking-title">🏆 랭킹 (점수 높은 순)</div>
@@ -482,7 +488,13 @@ html,body{
     </section>
 
     <!-- ============ SHOP ============ -->
+    <section id="scene-mathbattle" class="scene" style="background:#0a0c14;">
+      <button class="btn-back" id="mathBattleBack" style="position:absolute; top:74px; left:20px; z-index:50;">◀ 나가기</button>
+      <iframe id="mathBattleFrame" src="" style="width:100%; height:100%; border:none;"></iframe>
+    </section>
+
     <section id="scene-shop" class="scene">
+
       <div class="safezone-top"></div>
       <div class="shop-title">ITEM SHOP</div>
       <div class="shop-grid" id="shopGrid"></div>
@@ -884,6 +896,7 @@ document.getElementById('mallBtn').addEventListener('click', (e)=>{
 document.getElementById('btnBeginner').addEventListener('click', ()=> { playSfx('click'); enterChannelLobby('beginner'); });
 document.getElementById('btnMid').addEventListener('click', ()=> { playSfx('click'); enterChannelLobby('mid'); });
 document.getElementById('btnShop').addEventListener('click', ()=> { playSfx('click'); goScene('scene-shop'); });
+document.getElementById('btnMathBattle').addEventListener('click', ()=> { playSfx('click'); enterChannelLobby('mathbattle'); });
 document.getElementById('shopBack').addEventListener('click', ()=> { playSfx('click'); goScene('scene-lobby', { onShow: ()=> startBgm('lobby') }); });
 
 let currentChannel = 'beginner';
@@ -979,7 +992,16 @@ function stopAmbientChat(){ if(ambientChatTimer){ clearInterval(ambientChatTimer
 document.getElementById('gameStartBtn').addEventListener('click', ()=>{
   playSfx('click');
   stopAmbientChat();
-  goScene('scene-ingame', { onShow: ()=>{ initGame(); startBgm('ingame'); } });
+  if(currentChannel === 'mathbattle'){
+    goScene('scene-mathbattle', { onShow: ()=>{ document.getElementById('mathBattleFrame').src = 'orange-cat-mathbattle.html'; } });
+  } else {
+    goScene('scene-ingame', { onShow: ()=>{ initGame(); startBgm('ingame'); } });
+  }
+});
+document.getElementById('mathBattleBack').addEventListener('click', ()=>{
+  playSfx('click');
+  document.getElementById('mathBattleFrame').src = '';
+  goScene('scene-lobby', { onShow: ()=> startBgm('lobby') });
 });
 
 /* ============================================================

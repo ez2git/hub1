@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>퍼즐 모드 2: 암산배틀 프로토타입 v20</title>
+  <style>
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Pretendard', sans-serif; 
+      touch-action: manipulation; 
+    }
+    
+    body { 
+      background-color: #f0f4f8; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100vh;
+      min-height: 100dvh; 
+      margin: 0; 
+      padding-top: max(6px, env(safe-area-inset-top));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      padding-left: 8px;
+      padding-right: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    
+    .game-container { 
+      width: min(360px, 100%); 
+      display: flex; 
+      flex-direction: column; 
+      gap: 4px; 
+      margin: auto 0;
+    }
+
+    .size-selector {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      background: #e2e8f0;
+      padding: 3px;
+      border-radius: 8px;
+    }
+    .size-btn {
+      flex: 1;
+      padding: 4px 0;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+      font-weight: bold;
+      color: #64748b;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .size-btn.active {
+      background: #ffffff;
+      color: #3f51b5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .game-header { 
+      display: flex; 
+      justify-content: space-between; 
+      font-weight: bold; 
+      color: #333; 
+      font-size: 13px; 
+      padding: 0 2px;
+    }
+    
+    .question-box { 
+      background: #ffffff; 
+      border: 1.5px solid #3f51b5; 
+      border-radius: 8px; 
+      padding: 4px 8px; 
+      text-align: center; 
+      position: relative; 
+      overflow: hidden; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    }
+    .timer-info { 
+      font-size: 10px; 
+      color: #ff3d00; 
+      font-weight: bold; 
+      text-align: right; 
+      height: 12px; 
+      line-height: 12px; 
+    }
+    .equation-text { 
+      font-size: 15px; 
+      font-weight: bold; 
+      color: #1a237e; 
+      min-height: 22px; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 0px; 
+      line-height: 1.2;
+    }
+    .equation-subtext { 
+      font-size: 10px; 
+      color: #d97706; 
+      font-weight: 600; 
+    }
+    
+    .user-answer { color: #ff3d00; border-bottom: 2px solid #ff3d00; padding: 0 4px; min-width: 28px; display: inline-block; }
+    .mask-char { display: inline-block; margin: 0 1px; }
+    .mask-hidden { color: #ff3d00; border-bottom: 2px solid #ff3d00; min-width: 12px; text-align: center; }
+
+    .board { 
+      --board-size: 6;
+      display: grid; 
+      grid-template-columns: repeat(var(--board-size), 1fr); 
+      gap: 4px; 
+      width: min(336px, 86vw); 
+      height: min(336px, 86vw); 
+      margin: 0 auto;
+      background: #2c3e50; 
+      padding: 5px; 
+      border-radius: 10px; 
+      box-shadow: 0 6px 12px rgba(0,0,0,0.12); 
+      touch-action: none; 
+      user-select: none; 
+      position: relative; 
+    }
+    .tile { 
+      background: #ffffff; 
+      border-radius: 5px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: calc(23px - var(--board-size) * 1px); 
+      font-weight: bold; 
+      cursor: grab; 
+      user-select: none; 
+      color: #333; 
+      position: relative; 
+      overflow: hidden; 
+      z-index: 1; 
+      will-change: transform; 
+    }
+    .tile.operator { background: #e0f7fa; color: #00796b; }
+    
+    .tile.highlight.horizontal {
+      background: linear-gradient(to right, #d32f2f var(--gauge, 100%), #1e293b var(--gauge, 100%)) !important;
+      color: #ffffff !important;
+      border: 1px solid #ff8a80;
+    }
+    .tile.highlight.vertical {
+      background: linear-gradient(to bottom, #d32f2f var(--gauge, 100%), #1e293b var(--gauge, 100%)) !important;
+      color: #ffffff !important;
+      border: 1px solid #ff8a80;
+    }
+
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #e2e8f0; padding: 5px; border-radius: 10px; }
+    .key-btn { background: #ffffff; border: none; border-radius: 5px; padding: 8px 0; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.1s; }
+    .key-btn:active { background: #cbd5e1; }
+    .key-btn.action { background: #94a3b8; color: #fff; }
+    .key-btn.submit { background: #3f51b5; color: #fff; }
+    .key-btn.hint { background: #ffb300; color: #fff; }
+
+    /* ===== 강화 연출용 CSS (v21) ===== */
+    .tile { transition: box-shadow .15s ease; }
+    .tile.dragging { box-shadow: 0 8px 16px rgba(0,0,0,.35); z-index: 20 !important; }
+    .tile.eq-pulse { animation: eqPulse .6s ease-in-out infinite; }
+    @keyframes eqPulse { 0%,100%{ filter:brightness(1);} 50%{ filter:brightness(1.35);} }
+    .tile.pop-out { animation: tilePopOut .32s ease forwards; z-index: 2; }
+    @keyframes tilePopOut { 0%{transform:scale(1) rotate(0);opacity:1;} 60%{transform:scale(1.35) rotate(8deg);opacity:.7;} 100%{transform:scale(0) rotate(20deg);opacity:0;} }
+    .tile.pop-in { animation: tilePopIn .28s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes tilePopIn { 0%{transform:scale(0);} 100%{transform:scale(1);} }
+
+    .question-box.shake { animation: qShake .4s ease; }
+    @keyframes qShake { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(5px);} }
+    .question-box.flash-correct { animation: flashGreen .5s ease; }
+    .question-box.flash-wrong { animation: flashRed .5s ease; }
+    @keyframes flashGreen { 0%{background:#c8f7d6;} 100%{background:#ffffff;} }
+    @keyframes flashRed { 0%{background:#ffd4d0;} 100%{background:#ffffff;} }
+
+    .timer-info.warn { color:#ff0000; animation: timerWarnPulse .5s ease-in-out infinite; }
+    @keyframes timerWarnPulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+
+    #fxLayer { position:absolute; inset:0; pointer-events:none; z-index:30; overflow:visible; }
+    .fx-particle { position:absolute; width:8px; height:8px; border-radius:50%; pointer-events:none; }
+    .fx-score-pop { position:absolute; font-weight:900; font-size:15px; color:#ff3d00; text-shadow:0 1px 2px rgba(255,255,255,.8); pointer-events:none; z-index:40; }
+    @keyframes scorePopFloat { 0%{transform:translateY(0); opacity:1;} 100%{transform:translateY(-34px); opacity:0;} }
+
+    #toastWrap { position:fixed; left:50%; top:14%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:6px; align-items:center; pointer-events:none; }
+    .toast { background:rgba(20,20,30,.92); color:#fff; font-weight:800; font-size:13px; padding:10px 18px; border-radius:20px;
+      box-shadow:0 6px 16px rgba(0,0,0,.35); opacity:0; transform:translateY(-10px) scale(.9); transition:all .25s ease; border:1.5px solid rgba(255,255,255,.15); }
+    .toast.show { opacity:1; transform:translateY(0) scale(1); }
+    .toast.warn { border-color:#ff6b6b; color:#ffd2d2; }
+    .toast.good { border-color:#4ade80; color:#d5ffe6; }
+
+    .combo-badge { position:absolute; top:-6px; right:-6px; background:linear-gradient(135deg,#ff9a3d,#ff5c1f); color:#fff; font-size:11px;
+      font-weight:900; padding:2px 7px; border-radius:10px; opacity:0; transform:scale(.5); transition:all .3s cubic-bezier(.34,1.56,.64,1); }
+    .combo-badge.show { opacity:1; transform:scale(1); }
+    #board-wrap { position:relative; }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <div class="size-selector">
+      <button class="size-btn" data-size="4" onclick="changeBoardSize(4)">4×4 칸</button>
+      <button class="size-btn" data-size="5" onclick="changeBoardSize(5)">5×5 칸</button>
+      <button class="size-btn active" data-size="6" onclick="changeBoardSize(6)">6×6 칸</button>
+    </div>
+
+    <div class="game-header">
+      <div style="position:relative; display:inline-block;">점수: <span id="score">0</span>점<span class="combo-badge" id="comboBadge"></span></div>
+      <div>힌트: <span id="hint-count">3</span>개</div>
+    </div>
+
+    <div class="question-box">
+      <div class="timer-info" id="timer-text"></div>
+      <div class="equation-text" id="equation-display">
+        <span>블록을 드래그하여 수식을 만드세요</span>
+        <span class="equation-subtext">(소수점 둘째 자리에서 반올림)</span>
+      </div>
+    </div>
+
+    <div id="board-wrap">
+      <div class="board" id="board"></div>
+      <div id="fxLayer"></div>
+    </div>
+
+    <div class="keypad">
+      <button class="key-btn" onclick="pressKey('1')">1</button>
+      <button class="key-btn" onclick="pressKey('2')">2</button>
+      <button class="key-btn" onclick="pressKey('3')">3</button>
+      <button class="key-btn" onclick="pressKey('4')">4</button>
+      <button class="key-btn" onclick="pressKey('5')">5</button>
+      <button class="key-btn" onclick="pressKey('6')">6</button>
+      <button class="key-btn" onclick="pressKey('7')">7</button>
+      <button class="key-btn" onclick="pressKey('8')">8</button>
+      <button class="key-btn" onclick="pressKey('9')">9</button>
+      <button class="key-btn" onclick="pressKey('.')">.</button>
+      <button class="key-btn" onclick="pressKey('0')">0</button>
+      <button class="key-btn action" onclick="pressKey('DEL')">⌫</button>
+      <button class="key-btn" onclick="pressKey('-')">-</button>
+      <button class="key-btn hint" onclick="useHint()">힌트</button>
+      <button class="key-btn submit" onclick="submitAnswer()">확인</button>
+    </div>
+  </div>
+
+  <div id="toastWrap"></div>
+
+  <script>
+    let BOARD_SIZE = 6; 
+    const NUMBERS = ['0','1','2','3','4','5','6','7','8','9'];
+    const OPERATORS = ['+','-','*','/'];
+    
+    let boardData = [];
+    let highlightedTiles = [];
+    let score = 0;
+    let hints = 3;
+    
+    let isSolving = false;
+    let isSwapping = false;
+    let currentEq = null;
+    let currentEqDir = 'horizontal'; 
+    let userInput = "";
+    let maskInfo = null;
+
+    let timerInterval = null;
+    let totalTime = 15;
+    let timeLeft = 15;
+
+    let dragStartTile = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let isDragging = false;
+    let dragAxis = null; // 드래그 방향(가로/세로) 고정용 - 한번 정해지면 그 축으로만 이동 (자유이동 방지)
+
+    const DEFAULT_EQ_HTML = `
+      <span>블록을 드래그하여 수식을 만드세요</span>
+      <span class="equation-subtext">(소수점 둘째 자리에서 반올림)</span>
+    `;
+
+    const boardEl = document.getElementById('board');
+    const eqDisplayEl = document.getElementById('equation-display');
+    const timerTextEl = document.getElementById('timer-text');
+
+    function roundToOneDecimal(value) {
+      if (Number.isInteger(value)) return value.toString();
+      const rounded = Math.round((value + Number.EPSILON) * 10) / 10;
+      return rounded.toString();
+    }
+
+    function changeBoardSize(size) {
+      if (BOARD_SIZE === size) return;
+      
+      BOARD_SIZE = size;
+      boardEl.style.setProperty('--board-size', size);
+
+      document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+      });
+
+      score = 0;
+      hints = 3;
+      document.getElementById('score').innerText = score;
+      document.getElementById('hint-count').innerText = hints;
+      
+      resetQuestionStateWithoutRender(); 
+      initBoard(); 
+    }
+
+    function isValidBoard() {
+      let hasOperator = false;
+      let numberCount = 0;
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          if (OPERATORS.includes(boardData[r][c])) {
+            hasOperator = true;
+          } else if (NUMBERS.includes(boardData[r][c])) {
+            numberCount++;
+          }
+        }
+      }
+      return hasOperator && numberCount >= 2;
+    }
+
+    function initBoard() {
+      do {
+        boardData = [];
+        for (let r = 0; r < BOARD_SIZE; r++) {
+          let row = [];
+          for (let c = 0; c < BOARD_SIZE; c++) {
+            row.push(getRandomValue());
+          }
+          boardData.push(row);
+        }
+      } while (!isValidBoard());
+
+      renderBoard();
+    }
+
+    function getRandomValue() {
+      return Math.random() < 0.7 
+        ? NUMBERS[Math.floor(Math.random() * NUMBERS.length)]
+        : OPERATORS[Math.floor(Math.random() * OPERATORS.length)];
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const val = boardData[r][c];
+          const tile = document.createElement('div');
+          tile.classList.add('tile');
+          tile.dataset.row = r;
+          tile.dataset.col = c;
+          if (OPERATORS.includes(val)) tile.classList.add('operator');
+          tile.innerText = val === '*' ? '×' : (val === '/' ? '÷' : val);
+
+          if (highlightedTiles.some(t => t.r === r && t.c === c)) {
+            tile.classList.add('highlight');
+            tile.classList.add('eq-pulse');
+            tile.classList.add(currentEqDir); 
+          }
+
+          tile.addEventListener('pointerdown', (e) => onPointerDown(e, r, c));
+          boardEl.appendChild(tile);
+        }
+      }
+    }
+
+    function getTileEl(r, c) {
+      return boardEl.querySelector(`.tile[data-row="${r}"][data-col="${c}"]`);
+    }
+
+    function onPointerDown(e, r, c) {
+      if (isSolving || isSwapping) return;
+      isDragging = true;
+      dragStartTile = { r, c };
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragAxis = null;
+
+      const tileEl = getTileEl(r, c);
+      if (tileEl) {
+        tileEl.style.zIndex = '10';
+        tileEl.style.transition = 'none';
+        tileEl.classList.add('dragging');
+      }
+      playSfx('pick');
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging || !dragStartTile || isSolving || isSwapping) return;
+
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+
+      const tileEl = getTileEl(dragStartTile.r, dragStartTile.c);
+      const cellSize = tileEl ? tileEl.getBoundingClientRect().width : 56;
+
+      // 대각선/자유이동 방지: 작은 데드존을 넘는 순간 가로/세로 중 한 축으로 고정하고,
+      // 그 이후로는 그 축으로만, 최대 한 칸 거리까지만 이동하도록 제한한다 (퍼즐게임 스왑처럼)
+      if (!dragAxis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        dragAxis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      }
+
+      let moveX = 0, moveY = 0;
+      if (dragAxis === 'x') {
+        moveX = Math.max(-cellSize, Math.min(cellSize, dx));
+      } else if (dragAxis === 'y') {
+        moveY = Math.max(-cellSize, Math.min(cellSize, dy));
+      }
+
+      if (tileEl) {
+        tileEl.style.transform = `translate(${moveX}px, ${moveY}px)`;
+      }
+
+      const threshold = 30; 
+      if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+        let targetR = dragStartTile.r;
+        let targetC = dragStartTile.c;
+
+        if (dragAxis === 'x') {
+          targetC += dx > 0 ? 1 : -1;
+        } else {
+          targetR += dy > 0 ? 1 : -1;
+        }
+
+        cleanupDragEvents();
+
+        if (targetR >= 0 && targetR < BOARD_SIZE && targetC >= 0 && targetC < BOARD_SIZE) {
+          executeSwapAnimation(dragStartTile.r, dragStartTile.c, targetR, targetC);
+        } else {
+          resetTilePosition(dragStartTile.r, dragStartTile.c);
+        }
+      }
+    }
+
+    function onPointerUp() {
+      if (isDragging && dragStartTile) {
+        resetTilePosition(dragStartTile.r, dragStartTile.c);
+      }
+      cleanupDragEvents();
+    }
+
+    function cleanupDragEvents() {
+      isDragging = false;
+      dragAxis = null;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+    }
+
+    function resetTilePosition(r, c) {
+      const tileEl = getTileEl(r, c);
+      if (tileEl) {
+        tileEl.style.transition = 'transform 0.15s ease';
+        tileEl.style.transform = 'translate(0px, 0px)';
+        tileEl.classList.remove('dragging');
+        setTimeout(() => {
+          if(!isSwapping) tileEl.style.zIndex = '1';
+        }, 150);
+      }
+    }
+
+    async function executeSwapAnimation(r1, c1, r2, c2) {
+      isSwapping = true;
+      const tile1 = getTileEl(r1, c1);
+      const tile2 = getTileEl(r2, c2);
+
+      if (!tile1 || !tile2) {
+        isSwapping = false;
+        return;
+      }
+
+      const rect1 = tile1.getBoundingClientRect();
+      const rect2 = tile2.getBoundingClientRect();
+
+      const targetDx = rect2.left - rect1.left;
+      const targetDy = rect2.top - rect1.top;
+
+      tile1.style.transition = 'transform 0.22s cubic-bezier(.34,1.2,.4,1)';
+      tile2.style.transition = 'transform 0.22s cubic-bezier(.34,1.2,.4,1)';
+
+      tile1.style.zIndex = '5';
+      tile2.style.zIndex = '4';
+
+      tile1.style.transform = `translate(${targetDx}px, ${targetDy}px)`;
+      tile2.style.transform = `translate(${-targetDx}px, ${-targetDy}px)`;
+      playSfx('swap');
+
+      await new Promise(resolve => setTimeout(resolve, 220));
+
+      const temp = boardData[r1][c1];
+      boardData[r1][c1] = boardData[r2][c2];
+      boardData[r2][c2] = temp;
+
+      isSwapping = false;
+      
+      highlightedTiles = [];
+      userInput = "";
+      eqDisplayEl.innerHTML = DEFAULT_EQ_HTML;
+      renderBoard();
+
+      const isHorizontalMove = (r1 === r2);
+      let result = null;
+
+      // 옮긴 방향과 "같은" 축을 판정한다: 가로로 옮기면 가로 줄, 세로로 옮기면 세로 줄
+      // (이전에는 반대 축을 판정해서 헷갈린다는 피드백이 있어 직관적인 방식으로 변경)
+      if (isHorizontalMove) {
+        result = detectHorizontalLine(r2, c2);
+      } else {
+        result = detectVerticalLine(c2, r2);
+      }
+
+      if (!result.success) {
+        playSfx('fail');
+        const qBox = document.querySelector('.question-box');
+        qBox.classList.remove('shake'); void qBox.offsetWidth; qBox.classList.add('shake');
+        setTimeout(() => qBox.classList.remove('shake'), 420);
+        resetCombo();
+        if (result.reason === 'DIV_BY_ZERO') {
+          showToast('0으로 나눌 수 없습니다! 턴을 잃습니다.', 'warn');
+        } else {
+          showToast('수식이 완성되지 않아 턴을 잃습니다.', 'warn');
+        }
+      }
+    }
+
+    function detectVerticalLine(colIndex, swappedRow) {
+      let lineValues = [];
+      for (let r = 0; r < BOARD_SIZE; r++) { lineValues.push(boardData[r][colIndex]); }
+      currentEqDir = 'vertical'; 
+      return parseEquation(lineValues, (r) => ({ r, c: colIndex }), swappedRow);
+    }
+
+    function detectHorizontalLine(rowIndex, swappedCol) {
+      let lineValues = [];
+      for (let c = 0; c < BOARD_SIZE; c++) { lineValues.push(boardData[rowIndex][c]); }
+      currentEqDir = 'horizontal'; 
+      return parseEquation(lineValues, (c) => ({ r: rowIndex, c }), swappedCol);
+    }
+
+    function parseEquation(lineArray, coordBuilder, targetIdx) {
+      const lineStr = lineArray.join('');
+      const regex = /([0-9]+(?:[\+\-\*\/][0-9]+)+)/g;
+      let match;
+      let divByZeroFound = false;
+
+      while ((match = regex.exec(lineStr)) !== null) {
+        const startIdx = match.index;
+        const matchLen = match[0].length;
+        const endIdx = startIdx + matchLen;
+
+        if (targetIdx >= startIdx && targetIdx < endIdx) {
+          const rawExpr = match[1];
+
+          if (/\/0(?![0-9])/.test(rawExpr)) {
+            divByZeroFound = true;
+            continue;
+          }
+
+          const sanitizedExpr = rawExpr.replace(/(^|[\+\-\*\/])0+([0-9]+)/g, '$1$2');
+          
+          let rawVal;
+          try {
+            rawVal = Function(`"use strict"; return (${sanitizedExpr})`)();
+          } catch(e) { continue; }
+
+          if (rawVal === undefined || isNaN(rawVal) || !isFinite(rawVal)) continue;
+
+          let targetAnsStr = roundToOneDecimal(rawVal);
+
+          highlightedTiles = [];
+          for (let k = startIdx; k < endIdx; k++) {
+            highlightedTiles.push(coordBuilder(k));
+          }
+
+          startQuestionMode(rawExpr, targetAnsStr);
+          return { success: true };
+        }
+      }
+
+      return { success: false, reason: divByZeroFound ? 'DIV_BY_ZERO' : 'NO_EQ' };
+    }
+
+    function startQuestionMode(rawExpr, targetAnsStr) {
+      isSolving = true;
+      currentEq = { rawExpr, targetAnsStr };
+      userInput = "";
+      maskInfo = null;
+
+      const hasMultOrDiv = rawExpr.includes('*') || rawExpr.includes('/');
+      
+      let digitIndices = [];
+      for (let i = 0; i < targetAnsStr.length; i++) {
+        if (/[0-9]/.test(targetAnsStr[i])) {
+          digitIndices.push(i);
+        }
+      }
+
+      if (hasMultOrDiv && digitIndices.length >= 3) {
+        const hideCount = Math.floor(digitIndices.length * 0.5);
+        let shuffled = [...digitIndices].sort(() => Math.random() - 0.5);
+        let hiddenIndices = new Set(shuffled.slice(0, hideCount));
+
+        maskInfo = {
+          hiddenIndices: hiddenIndices,
+          userInputs: []
+        };
+      }
+
+      renderBoard();
+      updateQuestionUI();
+      startTimer(highlightedTiles.length);
+    }
+
+    function updateQuestionUI() {
+      const displayExpr = currentEq ? currentEq.rawExpr.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ').replace(/\+/g, ' + ').replace(/\-/g, ' - ') : '';
+      
+      let answerHtml = "";
+
+      if (maskInfo) {
+        let inputIdx = 0;
+        for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
+          if (maskInfo.hiddenIndices.has(i)) {
+            const val = maskInfo.userInputs[inputIdx];
+            answerHtml += `<span class="mask-char mask-hidden">${val || '?'}</span>`;
+            inputIdx++;
+          } else {
+            answerHtml += `<span class="mask-char">${currentEq.targetAnsStr[i]}</span>`;
+          }
+        }
+      } else {
+        answerHtml = `<span class="user-answer">${userInput || '?'}</span>`;
+      }
+
+      eqDisplayEl.innerHTML = `
+        <div>
+          <span>${displayExpr} = </span>
+          <span>${answerHtml}</span>
+        </div>
+        <div class="equation-subtext">(소수점 둘째 자리에서 반올림)</div>
+      `;
+    }
+
+    function getCurrentCombinedAnswer() {
+      if (!maskInfo) return userInput;
+
+      let result = "";
+      let inputIdx = 0;
+      for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
+        if (maskInfo.hiddenIndices.has(i)) {
+          result += maskInfo.userInputs[inputIdx] || "";
+          inputIdx++;
+        } else {
+          result += currentEq.targetAnsStr[i];
+        }
+      }
+      return result;
+    }
+
+    function pressKey(key) {
+      if (!isSolving) return;
+
+      if (maskInfo) {
+        if (key === 'DEL') {
+          maskInfo.userInputs.pop();
+        } else if (/[0-9]/.test(key)) {
+          if (maskInfo.userInputs.length < maskInfo.hiddenIndices.size) {
+            maskInfo.userInputs.push(key);
+          }
+        }
+      } else {
+        if (key === 'DEL') {
+          userInput = userInput.slice(0, -1);
+        } else if (key === '-') {
+          if (userInput.startsWith('-')) {
+            userInput = userInput.slice(1);
+          } else if (userInput.length < 6) {
+            userInput = '-' + userInput;
+          }
+        } else if (key === '.') {
+          if (!userInput.includes('.') && userInput.length < 6) {
+            userInput += '.';
+          }
+        } else if (userInput.length < 6) {
+          if (userInput.includes('.')) {
+            const parts = userInput.split('.');
+            if (parts[1].length < 1) {
+              userInput += key;
+            }
+          } else {
+            userInput += key;
+          }
+        }
+      }
+      
+      updateQuestionUI();
+    }
+
+    function submitAnswer() {
+      if (!isSolving || !currentEq) return;
+
+      const finalSubmittedAnswer = getCurrentCombinedAnswer();
+      const qBox = document.querySelector('.question-box');
+
+      if (finalSubmittedAnswer === currentEq.targetAnsStr) {
+        let gainedScore = 0;
+        
+        if (currentEq.targetAnsStr.includes('.')) {
+          const parts = currentEq.targetAnsStr.split('.');
+          const intPart = Math.abs(parseInt(parts[0], 10)) || 0;
+          const decPart = parseInt(parts[1], 10) || 0;
+          gainedScore = intPart + decPart;
+        } else {
+          gainedScore = Math.abs(parseInt(currentEq.targetAnsStr, 10)) || 0;
+        }
+        
+        score += gainedScore;
+        document.getElementById('score').innerText = score;
+        playSfx('correct');
+        qBox.classList.remove('flash-correct'); void qBox.offsetWidth; qBox.classList.add('flash-correct');
+        bumpCombo();
+        burstParticlesOnTiles(highlightedTiles, '#4ade80');
+        popScoreText(highlightedTiles[Math.floor(highlightedTiles.length/2)], gainedScore);
+
+        clearTiles(highlightedTiles);
+        resetQuestionState();
+      } else {
+        playSfx('wrong');
+        qBox.classList.remove('flash-wrong'); void qBox.offsetWidth; qBox.classList.add('flash-wrong');
+        qBox.classList.remove('shake'); void qBox.offsetWidth; qBox.classList.add('shake');
+        setTimeout(()=> qBox.classList.remove('shake'), 420);
+        resetCombo();
+        showToast('오답입니다!', 'warn');
+        if (maskInfo) {
+          maskInfo.userInputs = [];
+        } else {
+          userInput = "";
+        }
+        updateQuestionUI();
+      }
+    }
+
+    function useHint() {
+      if (!isSolving || hints <= 0) return;
+      hints--;
+      document.getElementById('hint-count').innerText = hints;
+      playSfx('hint');
+
+      // 한 번에 정답을 전부 보여주지 않고, 힌트 1회당 한 글자씩만 점진적으로 공개한다
+      if (maskInfo) {
+        const need = [];
+        for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
+          if (maskInfo.hiddenIndices.has(i)) need.push(i);
+        }
+        const filled = maskInfo.userInputs.length;
+        if (filled < need.length) {
+          const idx = need[filled];
+          maskInfo.userInputs.push(currentEq.targetAnsStr[idx]);
+        }
+      } else {
+        const target = currentEq.targetAnsStr;
+        const revealCount = Math.min(target.length, userInput.length + 1);
+        userInput = target.slice(0, revealCount);
+      }
+
+      updateQuestionUI();
+    }
+
+    function startTimer(tileCount) {
+      clearInterval(timerInterval);
+      totalTime = tileCount * 5;
+      timeLeft = totalTime;
+      
+      timerTextEl.innerText = `⏳ ${timeLeft.toFixed(1)}초`;
+      timerTextEl.classList.remove('warn');
+      let lastTickSecond = Math.ceil(timeLeft);
+
+      timerInterval = setInterval(() => {
+        timeLeft -= 0.1;
+        
+        const progress = timeLeft / totalTime;
+        const totalFill = progress * tileCount;
+        
+        highlightedTiles.forEach((coord, index) => {
+          const tileEl = getTileEl(coord.r, coord.c);
+          if (tileEl) {
+            const fill = Math.max(0, Math.min(1, totalFill - index)) * 100;
+            tileEl.style.setProperty('--gauge', `${fill}%`);
+          }
+        });
+
+        timerTextEl.innerText = `⏳ ${Math.max(0, timeLeft).toFixed(1)}초`;
+        if (timeLeft <= 5) timerTextEl.classList.add('warn'); else timerTextEl.classList.remove('warn');
+        const curSec = Math.ceil(timeLeft);
+        if (timeLeft>0 && timeLeft<=5 && curSec!==lastTickSecond) { playSfx('tick'); lastTickSecond = curSec; }
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          playSfx('fail');
+          resetCombo();
+          showToast('시간 초과! 턴이 넘어갑니다.', 'warn');
+          resetQuestionState();
+        }
+      }, 100);
+    }
+
+    function resetQuestionState() {
+      clearInterval(timerInterval);
+      isSolving = false;
+      currentEq = null;
+      highlightedTiles = [];
+      userInput = "";
+      maskInfo = null;
+      timerTextEl.innerText = '';
+      timerTextEl.classList.remove('warn');
+      eqDisplayEl.innerHTML = DEFAULT_EQ_HTML;
+      renderBoard();
+    }
+
+    function resetQuestionStateWithoutRender() {
+      clearInterval(timerInterval);
+      isSolving = false;
+      currentEq = null;
+      highlightedTiles = [];
+      userInput = "";
+      maskInfo = null;
+      timerTextEl.innerText = '';
+      timerTextEl.classList.remove('warn');
+      eqDisplayEl.innerHTML = DEFAULT_EQ_HTML;
+    }
+
+    async function clearTiles(tiles) {
+      // 즉시 교체하지 않고, 파괴 -> 새 블록 등장 순으로 눈에 보이게 처리한다
+      const els = tiles.map(t => getTileEl(t.r, t.c)).filter(Boolean);
+      els.forEach(el => el.classList.add('pop-out'));
+      await new Promise(res => setTimeout(res, 260));
+
+      tiles.forEach(t => {
+        boardData[t.r][t.c] = getRandomValue();
+      });
+
+      if (!isValidBoard()) {
+        initBoard();
+        showToast('완성 가능한 수식이 없어 판을 다시 섞습니다.', 'warn');
+        return;
+      }
+
+      renderBoard();
+      tiles.forEach(t => {
+        const el = getTileEl(t.r, t.c);
+        if (el) el.classList.add('pop-in');
+      });
+    }
+
+    /* ============================================================
+       강화 연출 모듈 (v21): 사운드 / 파티클 / 점수 팝업 / 토스트 / 콤보
+       ============================================================ */
+    const SoundEngine = (function(){
+      let ctx = null, master = null;
+      function ensureCtx(){
+        if(!ctx){
+          try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+          master = ctx.createGain(); master.gain.value = .3; master.connect(ctx.destination);
+        }
+        if(ctx.state==='suspended') ctx.resume();
+        return ctx;
+      }
+      ['pointerdown','touchstart','click','keydown'].forEach(evt=> window.addEventListener(evt, ensureCtx, {passive:true}));
+      function blip(freq, dur, type, vol, delay){
+        const c = ensureCtx(); if(!c) return;
+        const t0 = c.currentTime + (delay||0);
+        const osc = c.createOscillator(), g = c.createGain();
+        osc.type = type||'square';
+        osc.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(vol!=null?vol:.4, t0+.012);
+        g.gain.exponentialRampToValueAtTime(.001, t0+dur);
+        osc.connect(g); g.connect(master);
+        osc.start(t0); osc.stop(t0+dur+.02);
+      }
+      const SFX = {
+        pick: ()=> blip(500,.05,'square',.18),
+        swap: ()=> blip(360,.06,'square',.2),
+        fail: ()=> { blip(220,.18,'sawtooth',.25); blip(160,.22,'sawtooth',.22,.08); },
+        correct: ()=> { [0,.09,.18].forEach((d,i)=> blip([523,659,880][i],.2,'triangle',.28,d)); },
+        wrong: ()=> { blip(200,.25,'sawtooth',.28); },
+        hint: ()=> blip(700,.05,'square',.2),
+        tick: ()=> blip(900,.04,'square',.15),
+      };
+      return { play(name){ try{ if(SFX[name]) SFX[name](); }catch(e){} } };
+    })();
+    function playSfx(name){ try{ SoundEngine.play(name); }catch(e){} }
+
+    function boardWrapRect(){ return document.getElementById('board-wrap').getBoundingClientRect(); }
+    function burstParticlesOnTiles(tiles, color){
+      try{
+        const wrap = boardWrapRect();
+        const fxLayer = document.getElementById('fxLayer');
+        tiles.forEach(t=>{
+          const el = getTileEl(t.r, t.c);
+          if(!el) return;
+          const r = el.getBoundingClientRect();
+          const cx = r.left - wrap.left + r.width/2, cy = r.top - wrap.top + r.height/2;
+          for(let i=0;i<6;i++){
+            const p = document.createElement('div');
+            p.className = 'fx-particle';
+            p.style.left = cx+'px'; p.style.top = cy+'px';
+            p.style.background = color || '#ffd23a';
+            fxLayer.appendChild(p);
+            const ang = Math.random()*Math.PI*2, dist = 16+Math.random()*26;
+            p.animate([
+              { transform:'translate(0,0) scale(1)', opacity:1 },
+              { transform:`translate(${Math.cos(ang)*dist}px, ${Math.sin(ang)*dist}px) scale(0)`, opacity:0 }
+            ], { duration:380, easing:'ease-out' });
+            setTimeout(()=> p.remove(), 400);
+          }
+        });
+      }catch(e){}
+    }
+    function popScoreText(tileCoord, amount){
+      try{
+        if(!tileCoord) return;
+        const wrap = boardWrapRect();
+        const el = getTileEl(tileCoord.r, tileCoord.c);
+        if(!el) return;
+        const r = el.getBoundingClientRect();
+        const fxLayer = document.getElementById('fxLayer');
+        const s = document.createElement('div');
+        s.className = 'fx-score-pop';
+        s.textContent = '+' + amount;
+        s.style.left = (r.left - wrap.left + r.width/2 - 10)+'px';
+        s.style.top = (r.top - wrap.top)+'px';
+        fxLayer.appendChild(s);
+        s.animate([{transform:'translateY(0)', opacity:1},{transform:'translateY(-34px)', opacity:0}], {duration:800, easing:'ease-out'});
+        setTimeout(()=> s.remove(), 820);
+      }catch(e){}
+    }
+    let toastSeq = 0;
+    function showToast(text, kind){
+      const wrap = document.getElementById('toastWrap');
+      if(!wrap) return;
+      const id = ++toastSeq;
+      const t = document.createElement('div');
+      t.className = 'toast' + (kind ? ' '+kind : '');
+      t.textContent = text;
+      wrap.appendChild(t);
+      requestAnimationFrame(()=> t.classList.add('show'));
+      setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 300); }, 1800);
+    }
+    let combo = 0;
+    function bumpCombo(){
+      combo++;
+      const badge = document.getElementById('comboBadge');
+      if(!badge) return;
+      if(combo>=2){
+        badge.textContent = combo+' 콤보';
+        badge.classList.remove('show'); void badge.offsetWidth; badge.classList.add('show');
+      }
+    }
+    function resetCombo(){
+      combo = 0;
+      const badge = document.getElementById('comboBadge');
+      if(badge) badge.classList.remove('show');
+    }
+
+    initBoard();
+  </script>
+</body>
+</html>
