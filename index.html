@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-<title>귤냥이와 친구들 - THE MATCH3 PUZZLE ROYALE</title>
+<title>THE MATCH3 PUZZLE ROYALE</title>
 <style>
 :root{
   --design-w: 750;
   --design-h: 1334;
   --safe: 64px;
-  --c-bl01: #ff9a3d; /* 귤모자 */
-  --c-bl02: #2b2b33; /* 닌자 */
-  --c-bl03: #e0435c; /* 호랑이 후드 */
-  --c-bl04: #ffb3cc; /* 토끼 */
-  --c-bl05: #ff7a1a; /* 공룡 */
-  --panel: #1c2130;
-  --panel2: #262c40;
-  --accent: #ffb02e;
-  --accent2: #4a7bff;
+  --c-bl01: #FFB500; /* 의료용 가방 */
+  --c-bl02: #00FF41; /* 응급상황 */
+  --c-bl03: #FF6B35; /* 폭발 */
+  --c-bl04: #4A90E2; /* 의료 기술 */
+  --c-bl05: #E74C3C; /* 위험 */
+  --panel: #1a1a1a;
+  --panel2: #0d0d0d;
+  --accent: #FFB500;
+  --accent2: #00FF41;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; -webkit-text-size-adjust:100%; text-size-adjust:100%;}
 html,body{
@@ -32,17 +32,18 @@ html,body{
 #viewport-outer{
   position:fixed; inset:0;
   width:100vw; height:100vh; height:100dvh;
-  background: radial-gradient(circle at 50% 20%, #1a2036 0%, #05060b 75%);
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
   overflow:hidden;
 }
 #stage{
   position:absolute; left:50%; top:50%;
   width:750px; height:1334px;
   transform-origin: center center;
-  background: linear-gradient(180deg,#2a3358 0%, #171b2c 55%, #0c0e18 100%);
+  background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 50%, #000000 100%);
   overflow:hidden;
-  box-shadow: 0 0 60px rgba(0,0,0,.6);
+  box-shadow: 0 0 100px rgba(0,0,0,.8), inset 0 0 40px rgba(255,181,0,.1);
   border-radius: 10px;
+  border: 2px solid #2a2a2a;
 }
 .scene{
   position:absolute; inset:0; display:none;
@@ -75,10 +76,10 @@ html,body{
 .title-logo{ text-align:center; z-index:2; margin-top:20px;}
 .title-logo-img{
   width:280px; height:auto; margin:0 auto 10px; display:block;
-  filter: drop-shadow(0 10px 24px rgba(0,0,0,.45));
+  filter: drop-shadow(0 10px 24px rgba(255,181,0,.35));
 }
-.title-sub{ letter-spacing:6px; font-size:15px; color:#ffd9a8; font-weight:700; margin-bottom:6px;}
-.title-en{ margin-top:14px; font-size:20px; letter-spacing:2px; color:#8fb0ff; font-weight:800;}
+.title-sub{ letter-spacing:6px; font-size:15px; color:#FFB500; font-weight:700; margin-bottom:6px; text-transform:uppercase;}
+.title-en{ margin-top:14px; font-size:20px; letter-spacing:2px; color:#00FF41; font-weight:800;}
 .title-touch{
   margin-top:60px; font-size:20px; font-weight:800; color:#ffb02e;
   letter-spacing:2px; opacity:0; visibility:hidden; z-index:2;
@@ -252,7 +253,14 @@ html,body{
 .speech-bubble::after{ content:''; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); border:6px solid transparent; border-top-color:#fff; }
 .speech-bubble.show{ opacity:1; transform:translate(-50%,-100%) scale(1); }
 .food-bowl-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; padding-bottom:6px; position:relative; }
-.food-bowl{ font-size:40px; position:relative; left:0; transition: left .5s cubic-bezier(.34,1.56,.64,1); }
+.food-bowl{ font-size:40px; position:relative; left:0; }
+@keyframes bullet-fly-left{ 0%{ left:-120px; opacity:1; } 85%{ left:5px; opacity:1; } 100%{ left:0; opacity:0; } }
+@keyframes bullet-fly-right{ 0%{ right:-120px; opacity:1; } 85%{ right:5px; opacity:1; } 100%{ right:0; opacity:0; } }
+@keyframes hit-flash{ 0%{transform:scale(1);} 50%{transform:scale(1.3);opacity:1;} 100%{transform:scale(0.8);opacity:0;} }
+.bullet{ font-size:18px; position:absolute; pointer-events:none; }
+.bullet.left{ animation: bullet-fly-left .8s ease-in forwards; }
+.bullet.right{ animation: bullet-fly-right .8s ease-in forwards; }
+.hit-effect{ position:absolute; pointer-events:none; font-size:28px; animation: hit-flash .6s ease-out forwards; }
 .food-bowl-label{ font-size:11px; color:#9fb0ff; font-weight:800; margin-top:4px; letter-spacing:1px;}
 .target-score-label{ font-size:11px; color:#9fb0ff; font-weight:800; margin-top:4px; letter-spacing:1px;}
 .target-score-num{ font-size:15px; font-weight:900; color:#fff; margin-top:1px;}
@@ -408,8 +416,31 @@ html,body{
       <div class="safezone-top"></div>
       <div class="title-bg-orb"></div>
       <div class="title-logo">
-        <img class="title-logo-img" id="titleLogoImg" alt="귤냥이와 친구들">
-        <div class="title-sub">ORANGE CAT &amp; FRIENDS</div>
+        <svg class="title-logo-img" viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="titleGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#FFB500;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#FF6B35;stop-opacity:1" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <!-- 배경 -->
+          <rect x="10" y="10" width="260" height="120" rx="8" fill="rgba(0,0,0,0.3)" stroke="#FFB500" stroke-width="2"/>
+          <!-- 타이틀 텍스트 -->
+          <text x="140" y="50" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#FFB500" text-anchor="middle" letter-spacing="2" filter="url(#glow)">SURVIVAL</text>
+          <text x="140" y="85" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#00FF41" text-anchor="middle" letter-spacing="1">MATCH3</text>
+          <!-- 장식 - 총알/아이콘 -->
+          <circle cx="40" cy="40" r="4" fill="#FF6B35"/>
+          <circle cx="240" cy="40" r="4" fill="#FF6B35"/>
+          <circle cx="40" cy="90" r="4" fill="#4A90E2"/>
+          <circle cx="240" cy="90" r="4" fill="#4A90E2"/>
+        </svg>
         <div class="title-en">THE MATCH3 PUZZLE ROYALE</div>
       </div>
       <div class="login-box" id="loginBox">
@@ -435,19 +466,19 @@ html,body{
             <div class="user-ocp">OCP <span id="lobbyOcp">0</span></div>
           </div>
         </div>
-        <button class="btn-mall" id="mallBtn">귤냥이몰</button>
+        <button class="btn-mall" id="mallBtn">SHOP</button>
       </div>
       <div class="lobby-menu">
         <div class="channel-card beginner" id="btnBeginner">
-          <img class="channel-icon" id="iconBeginner" alt="초급 채널">
+          <div class="channel-icon" id="iconBeginner"></div>
           <div class="channel-label">초급 채널</div>
         </div>
         <div class="channel-card mid" id="btnMid">
-          <img class="channel-icon" id="iconMid" alt="중급 채널">
+          <div class="channel-icon" id="iconMid"></div>
           <div class="channel-label">중급 채널</div>
         </div>
         <div class="channel-card shop" id="btnShop">
-          <img class="channel-icon" id="iconShop" alt="ITEM SHOP">
+          <div class="channel-icon" id="iconShop"></div>
           <div class="channel-label">ITEM SHOP</div>
         </div>
         <div class="channel-card mathbattle" id="btnMathBattle">
@@ -516,28 +547,28 @@ html,body{
       <div class="char-stage">
         <div class="char-col" id="myCharCol">
           <div class="speech-bubble" id="mySpeech"></div>
-          <div class="char-stage-figure left" id="myCharFigure"><img id="myCharImg" alt="내 캐릭터"></div>
+          <div class="char-stage-figure left" id="myCharFigure"></div>
           <div class="char-name" id="myCharName">나</div>
           <div class="char-score-label">누적 점수</div>
           <div class="char-score" id="myTotalScoreDisp">0</div>
         </div>
         <div class="food-bowl-wrap">
           <div class="turn-score-popup" id="turnScorePopup">0</div>
-          <div class="food-bowl" id="foodBowl">🍮</div>
-          <div class="target-score-label">남은 목표점수</div>
+          <div class="food-bowl" id="foodBowl">👾</div>
+          <div class="target-score-label">남은 적군</div>
           <div class="target-score-num" id="targetScoreNum">150,000</div>
           <div class="target-bar-bg"><div class="target-bar-fill" id="targetBarFill"></div></div>
         </div>
         <div class="char-col" id="opCharCol">
           <div class="speech-bubble" id="opSpeech"></div>
-          <div class="char-stage-figure right" id="opCharFigure"><img id="opCharImg" alt="상대 캐릭터"></div>
+          <div class="char-stage-figure right" id="opCharFigure"></div>
           <div class="char-name" id="opCharName">상대</div>
           <div class="char-score-label">누적 점수</div>
           <div class="char-score" id="opTotalScoreDisp">0</div>
         </div>
       </div>
       <div class="reshuffle-banner" id="reshuffleBanner">가능한 매치가 없어 블록을 다시 섞습니다...</div>
-      <div class="howto-banner" id="howtoBanner">🍮 목표 점수를 빨리 가져가 먼저 0으로 만드세요!</div>
+      <div class="howto-banner" id="howtoBanner">👾 남은 적군을 빨리 처치해 먼저 0으로 만드세요!</div>
       <div id="board-wrap">
         <div id="board"></div>
         <div class="board-lock-overlay" id="boardLockOverlay"><span class="lock-icon">🔒</span></div>
@@ -563,8 +594,8 @@ html,body{
     <!-- ============ RESULT ============ -->
     <section id="scene-result" class="scene">
       <div class="safezone-top"></div>
-      <div class="result-badge" id="resultBadge">WIN!</div>
-      <div class="result-sub" id="resultSub">승리했습니다!</div>
+      <div class="result-badge" id="resultBadge">전투 승리!</div>
+      <div class="result-sub" id="resultSub">전투에서 승리했습니다!</div>
       <div class="result-score" id="resultScore">최종 점수 0 : 0</div>
       <div class="result-btns">
         <button class="btn-result primary" id="resultToLobby">로비로</button>
@@ -682,9 +713,9 @@ const SoundEngine = (function(){
 
   // ---- BGM: 간단한 루프 시퀀서 ----
   const BGM_PATTERNS = {
-    title: { notes:[392,0,494,0,587,494,392,0], step:0.34, type:'triangle', vol:.16 },
-    lobby: { notes:[440,523,659,523,440,349,392,523], step:0.28, type:'sine', vol:.14 },
-    ingame:{ notes:[330,392,330,392,294,349,294,349,262,330,262,330], step:0.2, type:'square', vol:.12 },
+    title: { notes:[130,146,164,146,130,110,123,110], step:0.4, type:'sine', vol:.18 },
+    lobby: { notes:[196,220,246,220,196,175,196,246,220,196,175,164], step:0.22, type:'square', vol:.14 },
+    ingame:{ notes:[165,196,220,196,165,147,165,220,165,196,220,196,165,147,130,147], step:0.15, type:'sawtooth', vol:.16 },
   };
   function stopBgm(){
     if(bgmTimer){ clearInterval(bgmTimer); bgmTimer=null; }
@@ -796,54 +827,214 @@ RANKS.forEach((r,i)=>{
 /* ============================================================
    3. 캐릭터 SVG 생성기 (bl01~bl05 + 상점 아이템 아이콘)
    ============================================================ */
-function catFaceSVG(type, size){
-  size = size || 60;
-  const palettes = {
-    bl01:{base:'#ff9a3d', ear:'#ff9a3d', mark:'#fff', eye:'#2c1c04', hood:true},
-    bl02:{base:'#2b2b33', ear:'#2b2b33', mark:'#4b4b58', eye:'#ffd23a', hood:false},
-    bl03:{base:'#e0435c', ear:'#e0435c', mark:'#ffb3c2', eye:'#2c1c04', hood:true},
-    bl04:{base:'#ffb3cc', ear:'#ffb3cc', mark:'#fff', eye:'#2c1c04', hood:false},
-    bl05:{base:'#ff7a1a', ear:'#ff7a1a', mark:'#ffce8a', eye:'#fff', hood:'dino'}
-  };
-  const p = palettes[type];
-  return `<svg width="${size}" height="${size}" viewBox="0 0 60 60">
-    <circle cx="30" cy="32" r="22" fill="${p.base}"/>
-    <path d="M12 18 L16 4 L26 20Z" fill="${p.ear}"/>
-    <path d="M48 18 L44 4 L34 20Z" fill="${p.ear}"/>
-    <circle cx="22" cy="33" r="3.4" fill="${p.eye}"/>
-    <circle cx="38" cy="33" r="3.4" fill="${p.eye}"/>
-    <ellipse cx="30" cy="41" rx="5" ry="3.2" fill="${p.mark}"/>
-    ${p.hood===true ? `<path d="M14 16 Q30 2 46 16 Q42 26 30 22 Q18 26 14 16Z" fill="${p.base}" opacity=".85"/>`:''}
-    ${p.hood==='dino' ? `<path d="M30 6 L34 16 L26 16Z" fill="#ffce8a"/>`:''}
+function createBGCharacter(charType, size){
+  // charType: 'player1' or 'player2'
+  const isMine = charType === 'player1';
+  const baseColor = isMine ? '#4a7bff' : '#ff5a5a';
+  const accentColor = isMine ? '#6fa8ff' : '#ff8888';
+  
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- 배경: 전술 육각형 패턴 -->
+    <defs>
+      <pattern id="hexPattern" patternUnits="userSpaceOnUse" width="20" height="20">
+        <path d="M10 0 L20 5.77 L20 17.32 L10 23.09 L0 17.32 L0 5.77 Z" fill="none" stroke="${baseColor}" stroke-width="0.5" opacity="0.3"/>
+      </pattern>
+    </defs>
+    <rect width="100" height="100" fill="url(#hexPattern)"/>
+    
+    <!-- 본체: 군복 실루엣 -->
+    <ellipse cx="50" cy="35" rx="20" ry="24" fill="${baseColor}"/>
+    
+    <!-- 헬멧 -->
+    <path d="M35 20 Q35 10 50 10 Q65 10 65 20 L62 28 Q50 32 38 28 Z" fill="${baseColor}" stroke="${accentColor}" stroke-width="1.5"/>
+    
+    <!-- 헬멧 광선 (전술 느낌) -->
+    <line x1="45" y1="12" x2="45" y2="8" stroke="${accentColor}" stroke-width="1" opacity="0.7"/>
+    <line x1="55" y1="12" x2="55" y2="8" stroke="${accentColor}" stroke-width="1" opacity="0.7"/>
+    
+    <!-- 얼굴 -->
+    <circle cx="50" cy="32" r="12" fill="#e8d4a8"/>
+    
+    <!-- 눈 (전술 고글 느낌) -->
+    <rect x="42" y="28" width="5" height="6" rx="1" fill="#1a1a1a"/>
+    <rect x="53" y="28" width="5" height="6" rx="1" fill="#1a1a1a"/>
+    <circle cx="44.5" cy="31" r="1.5" fill="#4a7bff"/>
+    <circle cx="55.5" cy="31" r="1.5" fill="#4a7bff"/>
+    
+    <!-- 입 -->
+    <path d="M45 37 Q50 39 55 37" stroke="#2c1c04" stroke-width="1" fill="none" stroke-linecap="round"/>
+    
+    <!-- 탄약집 (몸통) -->
+    <rect x="38" y="42" width="24" height="18" rx="2" fill="${accentColor}" opacity="0.8"/>
+    <rect x="40" y="44" width="6" height="14" fill="#3a3a44" opacity="0.6"/>
+    <rect x="50" y="44" width="6" height="14" fill="#3a3a44" opacity="0.6"/>
+    
+    <!-- 팔 (소매) -->
+    <rect x="25" y="38" width="10" height="16" rx="3" fill="${baseColor}"/>
+    <rect x="65" y="38" width="10" height="16" rx="3" fill="${baseColor}"/>
+    
+    <!-- 손 (장갑) -->
+    <circle cx="22" cy="56" r="4" fill="#2c2c2c"/>
+    <circle cx="78" cy="56" r="4" fill="#2c2c2c"/>
+    
+    <!-- 다리 (바지) -->
+    <rect x="42" y="62" width="6" height="20" rx="2" fill="#1a1a24"/>
+    <rect x="52" y="62" width="6" height="20" rx="2" fill="#1a1a24"/>
+    
+    <!-- 부츠 -->
+    <ellipse cx="45" cy="85" rx="4" ry="5" fill="#2c2c2c"/>
+    <ellipse cx="55" cy="85" rx="4" ry="5" fill="#2c2c2c"/>
+    
+    <!-- 전술 액세서리: 어깨 장비 -->
+    <rect x="32" y="42" width="4" height="12" fill="${accentColor}" opacity="0.9"/>
+    <rect x="64" y="42" width="4" height="12" fill="${accentColor}" opacity="0.9"/>
+    
+    <!-- 에너지 이펙트 (하단) -->
+    <circle cx="50" cy="92" r="3" fill="${accentColor}" opacity="0.6"/>
+    <circle cx="40" cy="90" r="2" fill="${accentColor}" opacity="0.4"/>
+    <circle cx="60" cy="90" r="2" fill="${accentColor}" opacity="0.4"/>
   </svg>`;
 }
-const BLOCK_TYPES = ['bl01','bl02','bl03','bl04','bl05'];
-const BLOCK_COLORS = {bl01:'#ff9a3d', bl02:'#3a3a44', bl03:'#e0435c', bl04:'#ffb3cc', bl05:'#ff7a1a'};
 
-// 로비 카드 아이콘 (첨부 문서의 실제 이미지 사용)
-document.getElementById('titleLogoImg').src = IMG_ASSETS.title_logo;
-document.getElementById('iconBeginner').src = IMG_ASSETS.card_beginner;
-document.getElementById('iconMid').src = IMG_ASSETS.card_mid;
-document.getElementById('iconShop').src = IMG_ASSETS.card_shop;
+// 이모지 추가 함수
+function createCharacterWithEmoji(charType, size){
+  const isMine = charType === 'player1';
+  const svg = isMine ? playerCharacterSVG(size) : opponentCharacterSVG(size);
+  return `<div style="position:relative; width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center;">${svg}</div>`;
+}
+
+function catFaceSVG(type, size){
+  // 배틀그라운드 테마 블록 아이콘 - 이모지 사용
+  const blockEmojis = {
+    bl01: '📦', // 탄약상자
+    bl02: '⚙️', // 기어/헬멧
+    bl03: '💣', // 수류탄
+    bl04: '💊', // 의료약품
+    bl05: '☠️'  // 위험/독가스
+  };
+  
+  const emoji = blockEmojis[type] || '📦';
+  return `<div style="font-size:${size}px; display:flex; align-items:center; justify-content:center; width:100%; height:100%;">${emoji}</div>`;
+}
+const BLOCK_TYPES = ['bl01','bl02','bl03','bl04','bl05'];
+const BLOCK_COLORS = {bl01:'#FFB500', bl02:'#00FF41', bl03:'#FF6B35', bl04:'#4A90E2', bl05:'#E74C3C'};
+const BLOCK_EMOJIS = {bl01:'🔫', bl02:'🪖', bl03:'🧤', bl04:'👢', bl05:'🦺'};
+
+// 배틀그라운드 생존자 캐릭터 SVG
+function playerCharacterSVG(size){
+  size = size || 180;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#D4A574;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#B8945C;stop-opacity:1" />
+      </linearGradient>
+      <linearGradient id="gearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#4A4A4A;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#2a2a2a;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <!-- 몸통 (방탄복) -->
+    <rect x="30" y="40" width="40" height="35" rx="3" fill="url(#gearGrad)" stroke="#FFB500" stroke-width="1.5"/>
+    <rect x="32" y="42" width="36" height="8" fill="#FFB500" opacity="0.3"/>
+    <!-- 팔 -->
+    <rect x="20" y="45" width="10" height="28" rx="4" fill="url(#skinGrad)" stroke="#2a2a2a" stroke-width="1"/>
+    <rect x="70" y="45" width="10" height="28" rx="4" fill="url(#skinGrad)" stroke="#2a2a2a" stroke-width="1"/>
+    <!-- 목 -->
+    <rect x="42" y="32" width="16" height="10" fill="url(#skinGrad)"/>
+    <!-- 머리 -->
+    <circle cx="50" cy="22" r="12" fill="url(#skinGrad)" stroke="#2a2a2a" stroke-width="1"/>
+    <!-- 헬멧 -->
+    <path d="M40 12 Q50 6 60 12 L58 24 Q50 26 42 24 Z" fill="#00FF41" stroke="#009933" stroke-width="1.5"/>
+    <line x1="44" y1="14" x2="56" y2="14" stroke="#009933" stroke-width="0.5" opacity="0.5"/>
+    <!-- 눈 -->
+    <circle cx="46" cy="20" r="1.5" fill="#000"/>
+    <circle cx="54" cy="20" r="1.5" fill="#000"/>
+    <!-- 무기 -->
+    <rect x="14" y="50" width="3" height="22" fill="#4A4A4A" stroke="#2a2a2a" stroke-width="0.5"/>
+    <rect x="14" y="50" width="8" height="3" fill="#FF6B35" stroke="#E74C3C" stroke-width="0.5"/>
+    <!-- 다리 -->
+    <rect x="35" y="78" width="8" height="22" fill="#2a3a4a" stroke="#1a1a2a" stroke-width="1"/>
+    <rect x="57" y="78" width="8" height="22" fill="#2a3a4a" stroke="#1a1a2a" stroke-width="1"/>
+    <!-- 부츠 -->
+    <rect x="34" y="98" width="10" height="6" rx="1" fill="#1a1a1a" stroke="#FFB500" stroke-width="0.5"/>
+    <rect x="56" y="98" width="10" height="6" rx="1" fill="#1a1a1a" stroke="#FFB500" stroke-width="0.5"/>
+  </svg>`;
+}
+
+function opponentCharacterSVG(size){
+  size = size || 180;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skinGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#E8B887;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#D4945C;stop-opacity:1" />
+      </linearGradient>
+      <linearGradient id="gearGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#5A5A5A;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#3a3a3a;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <!-- 몸통 (다른 색 방탄복) -->
+    <rect x="30" y="40" width="40" height="35" rx="3" fill="url(#gearGrad2)" stroke="#FF6B35" stroke-width="1.5"/>
+    <rect x="32" y="42" width="36" height="8" fill="#FF6B35" opacity="0.3"/>
+    <!-- 팔 -->
+    <rect x="20" y="45" width="10" height="28" rx="4" fill="url(#skinGrad2)" stroke="#3a3a3a" stroke-width="1"/>
+    <rect x="70" y="45" width="10" height="28" rx="4" fill="url(#skinGrad2)" stroke="#3a3a3a" stroke-width="1"/>
+    <!-- 목 -->
+    <rect x="42" y="32" width="16" height="10" fill="url(#skinGrad2)"/>
+    <!-- 머리 -->
+    <circle cx="50" cy="22" r="12" fill="url(#skinGrad2)" stroke="#3a3a3a" stroke-width="1"/>
+    <!-- 헬멧 (빨간 테마) -->
+    <path d="M40 12 Q50 6 60 12 L58 24 Q50 26 42 24 Z" fill="#E74C3C" stroke="#B83A32" stroke-width="1.5"/>
+    <line x1="44" y1="14" x2="56" y2="14" stroke="#B83A32" stroke-width="0.5" opacity="0.5"/>
+    <!-- 눈 -->
+    <circle cx="46" cy="20" r="1.5" fill="#000"/>
+    <circle cx="54" cy="20" r="1.5" fill="#000"/>
+    <!-- 무기 -->
+    <rect x="83" y="50" width="3" height="22" fill="#5A5A5A" stroke="#3a3a3a" stroke-width="0.5"/>
+    <rect x="78" y="50" width="8" height="3" fill="#FFB500" stroke="#D4A574" stroke-width="0.5"/>
+    <!-- 다리 -->
+    <rect x="35" y="78" width="8" height="22" fill="#3a4a5a" stroke="#2a2a3a" stroke-width="1"/>
+    <rect x="57" y="78" width="8" height="22" fill="#3a4a5a" stroke="#2a2a3a" stroke-width="1"/>
+    <!-- 부츠 -->
+    <rect x="34" y="98" width="10" height="6" rx="1" fill="#1a1a1a" stroke="#FF6B35" stroke-width="0.5"/>
+    <rect x="56" y="98" width="10" height="6" rx="1" fill="#1a1a1a" stroke="#FF6B35" stroke-width="0.5"/>
+  </svg>`;
+}
+
+// 로비 카드 아이콘 - 배틀그라운드 테마 이모지
+const CARD_ICONS = {
+  beginner: '📦',
+  mid: '⚙️',
+  shop: '💰'
+};
+
+function setSvgIcon(elementId, emojiContent) {
+  const el = document.getElementById(elementId);
+  el.style.fontSize = '80px';
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  el.style.justifyContent = 'center';
+  el.textContent = emojiContent;
+}
+
+setSvgIcon('iconBeginner', CARD_ICONS.beginner);
+setSvgIcon('iconMid', CARD_ICONS.mid);
+setSvgIcon('iconShop', CARD_ICONS.shop);
 
 // 채널 로비 캐릭터 그룹 (첨부 문서의 실제 이미지 사용)
 const charGroup = document.getElementById('charGroup');
-const charGroupImg = document.createElement('img');
-charGroupImg.src = IMG_ASSETS.char_group;
-charGroupImg.style.maxHeight = '100%';
-charGroupImg.style.maxWidth = '100%';
-charGroupImg.style.objectFit = 'contain';
-charGroup.appendChild(charGroupImg);
+// Character group display removed
 
 // HUD 아바타
 function svgToDataUri(svg){ return 'data:image/svg+xml;utf8,'+encodeURIComponent(svg); }
-document.getElementById('myCharImg').src = IMG_ASSETS.bl01;
-document.getElementById('opCharImg').src = IMG_ASSETS.bl02;
+// Character images assigned via SVG
 
 // 상점 아이템
 const SHOP_ITEMS = [
-  {name:'세로줄 파괴 부적', icon:'🍙'}, {name:'가로줄 파괴 부적', icon:'🍙'}, {name:'추적 파괴 생선', icon:'🐟'},
-  {name:'범위 파괴 폭탄', icon:'💣'}, {name:'일괄 파괴 보석', icon:'💎'}, {name:'MOVE +1 쿠폰', icon:'🎟️'}
+  {name:'세로 헬리콥터', icon:'🚁'}, {name:'가로 헬리콥터', icon:'🚁'}, {name:'추적 미사일', icon:'🚀'},
+  {name:'범위 파괴 폭탄', icon:'💣'}, {name:'일괄 파괴 전투기', icon:'✈️'}, {name:'MOVE +1 쿠폰', icon:'🎟️'}
 ];
 const shopGrid = document.getElementById('shopGrid');
 SHOP_ITEMS.forEach(it=>{
@@ -902,6 +1093,16 @@ document.getElementById('shopBack').addEventListener('click', ()=> { playSfx('cl
 let currentChannel = 'beginner';
 function enterChannelLobby(ch){
   currentChannel = ch;
+  
+  // charGroup에 모드별 이미지 표시
+  const charGroup = document.getElementById('charGroup');
+  const modeEmojis = {
+    beginner: '🟨', // 초급
+    mid: '⚙️',      // 중급
+    mathbattle: '🧮' // 암산배틀
+  };
+  charGroup.innerHTML = `<div style="font-size:120px; display:flex; align-items:center; justify-content:center; width:100%; height:100%;">${modeEmojis[ch] || '🎮'}</div>`;
+  
   goScene('scene-clobby', { onShow: ()=>{ startBgm('lobby'); startAmbientChat(); } });
 }
 document.getElementById('clobbyBack').addEventListener('click', ()=> { playSfx('click'); stopAmbientChat(); goScene('scene-lobby', { onShow: ()=> startBgm('lobby') }); });
@@ -932,7 +1133,7 @@ const CHAT_REPLIES = {
   question: ['그거 아이템 조합하면 더 세지지 않아요?','다음 판도 같이 할래요?','오늘 몇 판째세요?'],
   emote: ['ㅋㅋㅋㅋㅋ','ㄷㄷㄷ','😻','🍊','헐 대박','오호'],
   bye: ['수고하셨습니다~','다음에 또 봐요!','저 먼저 나갈게요 ㅎㅎ'],
-  generic: ['오늘 귤냥이 컨디션 좋아보이네요','저는 초급채널이 더 재밌더라구요','아이템 조합 tip 아시는 분?','랭킹 보니 다들 고수시네요 ㄷㄷ','귤냥이몰에 신상 떴던데 보셨어요?','블록판 색깔 조합 예쁘다 ㅎㅎ','다음 시즌 캐릭터는 누구 나올까요','오늘따라 매칭이 잘 되네요','저장 좀 하고 올게요 ㅋㅋ','배고파요 귤 먹으러 가야지'],
+  generic: ['오늘 컨디션 좋아보이네요','저는 초급채널이 더 재밌더라구요','아이템 조합 tip 아시는 분?','랭킹 보니 다들 고수시네요 ㄷㄷ','신상 아이템 떴던데 보셨어요?','블록판 색깔 조합 예쁘다 ㅎㅎ','다음 시즌 캐릭터는 누구 나올까요','오늘따라 매칭이 잘 되네요','저장 좀 하고 올게요 ㅋㅋ','배고파요 쉬러 가야지'],
 };
 function pickReply(userMsg){
   const msg = userMsg.toLowerCase();
@@ -1027,11 +1228,11 @@ const mySpeechEl = document.getElementById('mySpeech');
 const opSpeechEl = document.getElementById('opSpeech');
 
 const ITEM_TYPES = {
-  it01:{icon:'🍙', name:'세로줄 파괴'}, // 상하 파괴
-  it02:{icon:'🍙', name:'가로줄 파괴'}, // 좌우 파괴 (90도 회전 표기로 아이콘 동일, 클래스 구분)
-  it03:{icon:'🐟', name:'추적 파괴'},
-  it04:{icon:'💣', name:'범위 파괴'},
-  it05:{icon:'💎', name:'일괄 파괴'}
+  it01:{icon:'🚁', name:'세로줄 파괴'}, // 세로 헬리콥터 (회전)
+  it02:{icon:'🚁', name:'가로줄 파괴'}, // 가로 헬리콥터
+  it03:{icon:'🚀', name:'추적 파괴'},     // 미사일
+  it04:{icon:'💣', name:'범위 파괴'},     // 폭탄 유지
+  it05:{icon:'✈️', name:'일괄 파괴'}      // 전투기
 };
 
 // ---- 점수 데이터 (첨부 스펙 그대로 적용) ----
@@ -1158,9 +1359,14 @@ async function initGame(){
   });
   updateBoardWalls();
   document.getElementById('myCharName').textContent = USER.name;
-  document.getElementById('opCharName').textContent = (currentChannel==='beginner' ? '초급냥이' : '중급냥이') + ` (${diffLabel})`;
-  document.getElementById('myCharFigure').className = 'char-stage-figure left idle';
-  document.getElementById('opCharFigure').className = 'char-stage-figure right idle';
+  document.getElementById('opCharName').textContent = (currentChannel==='beginner' ? 'CPU Player' : 'CPU Player') + ` (${diffLabel})`;
+  const myFig = document.getElementById('myCharFigure');
+  const opFig = document.getElementById('opCharFigure');
+  myFig.className = 'char-stage-figure left idle';
+  opFig.className = 'char-stage-figure right idle';
+  // Draw Battlegrounds-style SVG characters with emoji
+  myFig.innerHTML = createCharacterWithEmoji('player1', 120);
+  opFig.innerHTML = createCharacterWithEmoji('player2', 120);
   updateScoreHUD();
   turnScorePopupEl.classList.remove('show','fly-left','fly-right');
   turnScorePopupEl.style.transform = '';
@@ -1204,11 +1410,16 @@ function createBlockEl(r,c,type,isItem,animateSpawn){
   inner.className='block-inner';
   if(isItem){
     const def = ITEM_TYPES[type];
-    const rot = type==='it02' ? 'transform:rotate(90deg); display:inline-block;' : '';
+    const rot = type==='it01' ? 'transform:rotate(90deg); display:inline-block;' : '';
     inner.innerHTML = `<span style="${rot}">${def.icon}</span>`;
   } else {
     inner.style.background = `radial-gradient(circle at 35% 30%, ${lighten(BLOCK_COLORS[type])}, ${BLOCK_COLORS[type]} 70%)`;
-    inner.innerHTML = IMG_ASSETS[type] ? `<img src="${IMG_ASSETS[type]}" style="width:44px;height:44px;object-fit:contain;">` : catFaceSVG(type, 44);
+    inner.style.fontSize = '48px';
+    inner.style.lineHeight = '1';
+    inner.style.display = 'flex';
+    inner.style.alignItems = 'center';
+    inner.style.justifyContent = 'center';
+    inner.textContent = BLOCK_EMOJIS[type];
   }
   el.appendChild(inner);
   boardEl.appendChild(el);
@@ -2216,15 +2427,40 @@ async function consumeMoveAndContinue(){
   }
 }
 function stealFood(side){
-  // side: 'me' | 'op' - 방금 턴을 마친 쪽이 가운데 밥을 자기 쪽으로 뺏어감
+  // side: 'me' | 'op' - 각 플레이어가 총알을 쏘는 애니메이션
   const bowl = document.getElementById('foodBowl');
+  const foodBowlWrap = bowl.parentElement;
   const myFig = document.getElementById('myCharFigure');
   const opFig = document.getElementById('opCharFigure');
-  bowl.style.left = (side==='me') ? '-70px' : '70px';
-  const fig = side==='me' ? myFig : opFig;
+  
+  // 총알 생성
+  const bullet = document.createElement('div');
+  bullet.className = 'bullet ' + (side === 'me' ? 'left' : 'right');
+  bullet.textContent = '💥';
+  bullet.style.top = '50%';
+  bullet.style.transform = 'translateY(-50%)';
+  foodBowlWrap.appendChild(bullet);
+  
+  // 타격 이펙트 추가 (총알이 도달할 때)
+  setTimeout(() => {
+    const hitEffect = document.createElement('div');
+    hitEffect.className = 'hit-effect';
+    hitEffect.textContent = '⚡';
+    hitEffect.style.top = '50%';
+    hitEffect.style.left = '50%';
+    hitEffect.style.transform = 'translate(-50%, -50%)';
+    foodBowlWrap.appendChild(hitEffect);
+    
+    setTimeout(() => hitEffect.remove(), 600);
+  }, 680);
+  
+  // 총알 애니메이션 후 제거
+  setTimeout(() => bullet.remove(), 800);
+  
+  // 캐릭터 반응
+  const fig = side === 'me' ? myFig : opFig;
   fig.classList.add('bump');
-  setTimeout(()=>{ fig.classList.remove('bump'); }, 320);
-  setTimeout(()=>{ bowl.style.left='0px'; }, 650);
+  setTimeout(() => fig.classList.remove('bump'), 320);
 }
 
 // ---- 캐릭터 대사 (다양하게 랜덤으로) ----
@@ -2472,7 +2708,12 @@ async function reshuffleBoard(){
     if(cell && !cell.isItem){
       const inner = cell.el.querySelector('.block-inner');
       inner.style.background = `radial-gradient(circle at 35% 30%, ${lighten(BLOCK_COLORS[cell.type])}, ${BLOCK_COLORS[cell.type]} 70%)`;
-      inner.innerHTML = IMG_ASSETS[cell.type] ? `<img src="${IMG_ASSETS[cell.type]}" style="width:44px;height:44px;object-fit:contain;">` : catFaceSVG(cell.type, 44);
+      inner.style.fontSize = '48px';
+      inner.style.lineHeight = '1';
+      inner.style.display = 'flex';
+      inner.style.alignItems = 'center';
+      inner.style.justifyContent = 'center';
+      inner.textContent = BLOCK_EMOJIS[cell.type];
       cell.el.classList.add('spawn');
       setTimeout(()=> cell.el.classList.remove('spawn'), 260);
     }
@@ -2579,9 +2820,9 @@ function finishGame(win){
     const badge = document.getElementById('resultBadge');
     const sub = document.getElementById('resultSub');
     const winnerName = win ? USER.name : (document.getElementById('opCharName').textContent || '상대');
-    badge.textContent = win? 'WIN!' : 'LOSE...';
+    badge.textContent = win? '전투 승리!' : '전투 패배...';
     badge.className = 'result-badge '+(win?'win':'lose');
-    sub.textContent = `${winnerName}님이 마지막 밥을 차지했어요!`;
+    sub.textContent = win ? `${winnerName}님이 남은 적군을 해치웠어요!` : `${winnerName}님에게 패배했습니다...`;
     document.getElementById('resultScore').textContent = `최종 점수 ${game.myTotalScore.toLocaleString()} : ${game.opTotalScore.toLocaleString()}`;
     playSfx(win?'win':'lose');
     goScene('scene-result');
