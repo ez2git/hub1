@@ -38,18 +38,18 @@
 
     .size-selector {
       display: flex;
-      justify-content: flex-end;
-      gap: 2px;
-      background: transparent;
-      padding: 0;
+      justify-content: center;
+      gap: 4px;
+      background: #e2e8f0;
+      padding: 3px;
       border-radius: 8px;
     }
     .size-btn {
-      width: 44px;
-      padding: 3px 0;
+      flex: 1;
+      padding: 4px 0;
       border: none;
-      background: #e2e8f0;
-      font-size: 10px;
+      background: transparent;
+      font-size: 12px;
       font-weight: bold;
       color: #64748b;
       border-radius: 5px;
@@ -57,31 +57,18 @@
       transition: all 0.2s ease;
     }
     .size-btn.active {
-      background: #3f51b5;
-      color: #ffffff;
+      background: #ffffff;
+      color: #3f51b5;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .game-header { 
       display: flex; 
-      justify-content: space-between;
-      align-items: center;
+      justify-content: space-between; 
       font-weight: bold; 
       color: #333; 
       font-size: 13px; 
       padding: 0 2px;
-      min-height: 24px;
-    }
-    .game-header > div:first-child {
-      flex: 0 0 auto;
-    }
-    .game-header > div:nth-child(2) {
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
-    .game-header > div:last-child {
-      flex: 0 0 auto;
     }
     
     .question-box { 
@@ -212,49 +199,9 @@
       font-weight:900; padding:2px 7px; border-radius:10px; opacity:0; transform:scale(.5); transition:all .3s cubic-bezier(.34,1.56,.64,1); }
     .combo-badge.show { opacity:1; transform:scale(1); }
     #board-wrap { position:relative; }
-
-    /* ===== 화면 중앙 점수/콤보 연출 ===== */
-    #centerPopup { 
-      position: fixed; 
-      top: 50%; 
-      left: 50%; 
-      transform: translate(-50%, -50%) scale(0);
-      z-index: 150; 
-      pointer-events: none;
-      text-align: center;
-    }
-    #centerPopup.score-pop {
-      font-size: 48px;
-      font-weight: 900;
-      color: #ff3d00;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      animation: centerScorePop 0.8s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
-    #centerPopup.combo-pop {
-      font-size: 52px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #ff9a3d, #ff5c1f);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      animation: centerComboPop 0.9s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
-    @keyframes centerScorePop {
-      0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 1; }
-      70% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-    }
-    @keyframes centerComboPop {
-      0% { transform: translate(-50%, -50%) scale(0) rotate(-20deg); opacity: 1; }
-      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
-    }
   </style>
 </head>
 <body>
-
-  <div id="centerPopup"></div>
 
   <div class="game-container">
     <div class="size-selector">
@@ -264,12 +211,8 @@
     </div>
 
     <div class="game-header">
+      <div style="position:relative; display:inline-block;">점수: <span id="score">0</span>점<span class="combo-badge" id="comboBadge"></span></div>
       <div>힌트: <span id="hint-count">3</span>개</div>
-      <div style="position:relative; display:flex; align-items:center; justify-content:center; gap:8px;">
-        <div>점수: <span id="score">0</span>점</div>
-        <span class="combo-badge" id="comboBadge"></span>
-      </div>
-      <div style="width:40px;"></div>
     </div>
 
     <div class="question-box">
@@ -348,42 +291,41 @@
       return rounded.toString();
     }
 
-    function normalizeAnswer(answerStr) {
-      // 선행 0 제거 (예: "091" → "91", "-091" → "-91")
-      if (!answerStr.includes('.')) {
-        // 정수 처리
-        const isNegative = answerStr.startsWith('-');
-        let numPart = isNegative ? answerStr.slice(1) : answerStr;
-        const normalized = parseInt(numPart, 10).toString();
-        return isNegative ? '-' + normalized : normalized;
+    function normalizeAnswer(str) {
+      if (!str) return "";
+      
+      // "-0" → "0" 처리
+      if (str === "-0" || str === "-0.0") return "0";
+      
+      // 음수 처리: -091 → -91
+      if (str.startsWith('-')) {
+        const absStr = str.slice(1);
+        const dotIdx = absStr.indexOf('.');
+        
+        if (dotIdx === -1) {
+          // 정수: -091 → -91
+          const trimmed = absStr.replace(/^0+/, '');
+          return (trimmed || '0') === '0' ? '0' : '-' + (trimmed || '0');
+        } else {
+          // 소수: -091.5 → -91.5
+          const intPart = absStr.slice(0, dotIdx).replace(/^0+/, '') || '0';
+          const decPart = absStr.slice(dotIdx);
+          const result = intPart + decPart;
+          return result === '0' || result === '0.0' ? '0' : '-' + result;
+        }
+      }
+      
+      // 양수 처리: 091 → 91, 091.5 → 91.5
+      const dotIdx = str.indexOf('.');
+      if (dotIdx === -1) {
+        // 정수: 091 → 91
+        return str.replace(/^0+/, '') || '0';
       } else {
-        // 소수 처리
-        const [intPart, decPart] = answerStr.split('.');
-        const isNegative = intPart.startsWith('-');
-        const numPart = isNegative ? intPart.slice(1) : intPart;
-        const normalized = parseInt(numPart, 10).toString();
-        const result = isNegative ? '-' + normalized : normalized;
-        return result + '.' + decPart;
+        // 소수: 091.5 → 91.5
+        const intPart = str.slice(0, dotIdx).replace(/^0+/, '') || '0';
+        const decPart = str.slice(dotIdx);
+        return intPart + decPart;
       }
-    }
-
-    function displayToTwoDecimals(rawVal) {
-      // 원본 정확한 값을 둘째자리까지 표시
-      if (rawVal === undefined || isNaN(rawVal)) return '';
-      
-      if (Number.isInteger(rawVal)) {
-        return rawVal.toString();
-      }
-      
-      // 둘째자리까지만 표시 (반올림하지 않고 절단)
-      const str = rawVal.toString();
-      if (str.includes('.')) {
-        const [intPart, decPart] = str.split('.');
-        const displayDec = decPart.length > 2 ? decPart.substring(0, 2) : decPart;
-        return intPart + '.' + displayDec;
-      }
-      
-      return str;
     }
 
     function changeBoardSize(size) {
@@ -676,7 +618,7 @@
             highlightedTiles.push(coordBuilder(k));
           }
 
-          startQuestionMode(rawExpr, targetAnsStr, rawVal);
+          startQuestionMode(rawExpr, targetAnsStr);
           return { success: true };
         }
       }
@@ -684,67 +626,29 @@
       return { success: false, reason: divByZeroFound ? 'DIV_BY_ZERO' : 'NO_EQ' };
     }
 
-    function startQuestionMode(rawExpr, targetAnsStr, rawVal) {
+    function startQuestionMode(rawExpr, targetAnsStr) {
       isSolving = true;
-      // targetAnsStr 정규화 (선행 0 제거)
+      // 식과 정답 모두 선행 0 제거
+      rawExpr = rawExpr.replace(/(^|[\+\-\*\/])0+([0-9]+)/g, '$1$2');
       targetAnsStr = normalizeAnswer(targetAnsStr);
-      currentEq = { rawExpr, targetAnsStr, rawVal };
+      currentEq = { rawExpr, targetAnsStr };
       userInput = "";
       maskInfo = null;
 
       const hasMultOrDiv = rawExpr.includes('*') || rawExpr.includes('/');
       
-      if (!hasMultOrDiv) {
-        renderBoard();
-        updateQuestionUI();
-        startTimer(highlightedTiles.length);
-        return;
-      }
-
-      // 마스킹 규칙
-      const decimalIndex = targetAnsStr.indexOf('.');
-      let hiddenIndices = new Set();
-      
-      if (decimalIndex !== -1) {
-        // 소수점 있음: 소수점 뒤 첫 1자리만 입력
-        hiddenIndices.add(decimalIndex + 1);
-      } else {
-        // 정수만 있음: 자리수에 따라 다름
-        const integerStr = targetAnsStr.replace(/^-/, ''); // 음수 기호 제거
-        const digitCount = integerStr.length;
-        
-        if (digitCount === 2) {
-          // 2자리: 전부 입력
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              hiddenIndices.add(i);
-            }
-          }
-        } else if (digitCount === 3) {
-          // 3자리: 1칸 랜덤
-          const digitIndices = [];
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              digitIndices.push(i);
-            }
-          }
-          const randomIdx = Math.floor(Math.random() * digitIndices.length);
-          hiddenIndices.add(digitIndices[randomIdx]);
-        } else if (digitCount >= 4) {
-          // 4자리 이상: 2칸 랜덤
-          const digitIndices = [];
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              digitIndices.push(i);
-            }
-          }
-          const shuffled = [...digitIndices].sort(() => Math.random() - 0.5);
-          hiddenIndices.add(shuffled[0]);
-          hiddenIndices.add(shuffled[1]);
+      let digitIndices = [];
+      for (let i = 0; i < targetAnsStr.length; i++) {
+        if (/[0-9]/.test(targetAnsStr[i])) {
+          digitIndices.push(i);
         }
       }
 
-      if (hiddenIndices.size > 0) {
+      if (hasMultOrDiv && digitIndices.length >= 3) {
+        const hideCount = Math.floor(digitIndices.length * 0.5);
+        let shuffled = [...digitIndices].sort(() => Math.random() - 0.5);
+        let hiddenIndices = new Set(shuffled.slice(0, hideCount));
+
         maskInfo = {
           hiddenIndices: hiddenIndices,
           userInputs: []
@@ -760,24 +664,19 @@
       const displayExpr = currentEq ? currentEq.rawExpr.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ').replace(/\+/g, ' + ').replace(/\-/g, ' - ') : '';
       
       let answerHtml = "";
-      let inputIdx = 0;
 
       if (maskInfo) {
-        // 마스킹이 있을 때: ? 또는 숫자 표시
+        let inputIdx = 0;
         for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
-          const char = currentEq.targetAnsStr[i];
           if (maskInfo.hiddenIndices.has(i)) {
-            // 입력해야 할 부분: 사용자 입력 또는 ?
-            const val = maskInfo.userInputs[inputIdx] || '?';
-            answerHtml += `<span class="mask-char mask-hidden">${val}</span>`;
+            const val = maskInfo.userInputs[inputIdx];
+            answerHtml += `<span class="mask-char mask-hidden">${val || '?'}</span>`;
             inputIdx++;
           } else {
-            // 보여줄 부분: 그대로 표시
-            answerHtml += `<span class="mask-char">${char}</span>`;
+            answerHtml += `<span class="mask-char">${currentEq.targetAnsStr[i]}</span>`;
           }
         }
       } else {
-        // 마스킹이 없을 때 (사용자 입력칸)
         answerHtml = `<span class="user-answer">${userInput || '?'}</span>`;
       }
 
@@ -848,9 +747,7 @@
     function submitAnswer() {
       if (!isSolving || !currentEq) return;
 
-      let finalSubmittedAnswer = getCurrentCombinedAnswer();
-      // 정규화 (선행 0 제거)
-      finalSubmittedAnswer = normalizeAnswer(finalSubmittedAnswer);
+      const finalSubmittedAnswer = normalizeAnswer(getCurrentCombinedAnswer());
       const qBox = document.querySelector('.question-box');
 
       if (finalSubmittedAnswer === currentEq.targetAnsStr) {
@@ -869,7 +766,6 @@
         document.getElementById('score').innerText = score;
         playSfx('correct');
         qBox.classList.remove('flash-correct'); void qBox.offsetWidth; qBox.classList.add('flash-correct');
-        showCenterPopup('+' + gainedScore + '점', 'score-pop');
         bumpCombo();
         burstParticlesOnTiles(highlightedTiles, '#4ade80');
         popScoreText(highlightedTiles[Math.floor(highlightedTiles.length/2)], gainedScore);
@@ -1100,17 +996,6 @@
       setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 300); }, 1800);
     }
     let combo = 0;
-    function showCenterPopup(text, type) {
-      const popup = document.getElementById('centerPopup');
-      if (!popup) return;
-      popup.textContent = text;
-      popup.className = type;
-      popup.offsetWidth; // reflow
-      setTimeout(() => {
-        popup.textContent = '';
-        popup.className = '';
-      }, 900);
-    }
     function bumpCombo(){
       combo++;
       const badge = document.getElementById('comboBadge');
@@ -1118,7 +1003,6 @@
       if(combo>=2){
         badge.textContent = combo+' 콤보';
         badge.classList.remove('show'); void badge.offsetWidth; badge.classList.add('show');
-        showCenterPopup(combo + ' 콤보!', 'combo-pop');
       }
     }
     function resetCombo(){
