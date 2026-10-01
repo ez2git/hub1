@@ -169,12 +169,15 @@
       border: 1px solid #ff8a80;
     }
 
-    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #e2e8f0; padding: 5px; border-radius: 10px; }
-    .key-btn { background: #ffffff; border: none; border-radius: 5px; padding: 8px 0; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.1s; }
+    .keypad-container { display: flex; gap: 6px; align-items: stretch; }
+    .button-column { display: flex; flex-direction: column; gap: 6px; }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: #e2e8f0; padding: 8px; border-radius: 10px; flex: 1; }
+    .key-btn { background: #ffffff; border: none; border-radius: 6px; padding: 14px 0; font-size: 18px; font-weight: bold; color: #333; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: background 0.1s; }
     .key-btn:active { background: #cbd5e1; }
     .key-btn.action { background: #94a3b8; color: #fff; }
-    .key-btn.submit { background: #3f51b5; color: #fff; }
-    .key-btn.hint { background: #ffb300; color: #fff; }
+    .key-btn.pass { background: #ef5350; color: #fff; }
+    .key-btn.submit { background: #3f51b5; color: #fff; flex: 1; min-width: 60px; }
+    .key-btn.hint { background: #ffb300; color: #fff; flex: 1; min-width: 60px; }
 
     /* ===== 강화 연출용 CSS (v21) ===== */
     .tile { transition: box-shadow .15s ease; }
@@ -185,6 +188,8 @@
     @keyframes tilePopOut { 0%{transform:scale(1) rotate(0);opacity:1;} 60%{transform:scale(1.35) rotate(8deg);opacity:.7;} 100%{transform:scale(0) rotate(20deg);opacity:0;} }
     .tile.pop-in { animation: tilePopIn .28s cubic-bezier(.34,1.56,.64,1); }
     @keyframes tilePopIn { 0%{transform:scale(0);} 100%{transform:scale(1);} }
+    .tile.fall { animation: tileFall .4s cubic-bezier(.25,.46,.45,.94) forwards; }
+    @keyframes tileFall { 0%{transform:translateY(-100%);opacity:1;} 100%{transform:translateY(0);opacity:1;} }
 
     .question-box.shake { animation: qShake .4s ease; }
     @keyframes qShake { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(8px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(5px);} }
@@ -250,11 +255,55 @@
       50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
       100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
     }
+
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: white; border-radius: 12px; padding: 24px; text-align: center; max-width: 280px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .calculation-modal { max-width: 350px; text-align: left; }
+    #calculationSteps { font-family: 'Courier New', monospace; font-size: 16px; line-height: 2; white-space: pre; padding: 15px; background: #f5f5f5; border-radius: 8px; margin-bottom: 10px; }
+    .modal-content h3 { margin: 0 0 12px 0; font-size: 16px; color: #333; }
+    .modal-content p { margin: 0 0 20px 0; font-size: 13px; color: #666; line-height: 1.5; }
+    .modal-buttons { display: flex; gap: 10px; }
+    .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .modal-btn.confirm { background: #4caf50; color: white; }
+    .modal-btn.cancel { background: #e0e0e0; color: #333; }
   </style>
 </head>
 <body>
 
   <div id="centerPopup"></div>
+
+  <!-- 보드 크기 변경 확인 모달 -->
+  <!-- 포기 확인 모달 -->
+  <div id="passModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>문제 포기</h3>
+      <p>해당 문제를 포기하시겠습니까?<br>포기하시면 현재 점수의 절반을 잃습니다.</p>
+      <div class="modal-buttons">
+        <button class="modal-btn confirm" onclick="confirmPass()">예</button>
+        <button class="modal-btn cancel" onclick="cancelPass()">아니오</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 계산 과정 모달 -->
+  <div id="calculationModal" class="modal" style="display:none;">
+    <div class="modal-content calculation-modal">
+      <h3>계산 과정</h3>
+      <div id="calculationSteps"></div>
+      <button class="modal-btn confirm" onclick="closeCalculation()" style="width:100%; margin-top:10px;">확인</button>
+    </div>
+  </div>
+
+  <div id="sizeChangeModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>판 크기 변경</h3>
+      <p>현재 기록이 초기화됩니다.<br>계속하시겠습니까?</p>
+      <div class="modal-buttons">
+        <button class="modal-btn confirm" onclick="confirmSizeChange()">확인</button>
+        <button class="modal-btn cancel" onclick="cancelSizeChange()">취소</button>
+      </div>
+    </div>
+  </div>
 
   <div class="game-container">
     <div class="size-selector">
@@ -285,22 +334,25 @@
       <div id="fxLayer"></div>
     </div>
 
-    <div class="keypad">
-      <button class="key-btn" onclick="pressKey('1')">1</button>
-      <button class="key-btn" onclick="pressKey('2')">2</button>
-      <button class="key-btn" onclick="pressKey('3')">3</button>
-      <button class="key-btn" onclick="pressKey('4')">4</button>
-      <button class="key-btn" onclick="pressKey('5')">5</button>
-      <button class="key-btn" onclick="pressKey('6')">6</button>
-      <button class="key-btn" onclick="pressKey('7')">7</button>
-      <button class="key-btn" onclick="pressKey('8')">8</button>
-      <button class="key-btn" onclick="pressKey('9')">9</button>
-      <button class="key-btn" onclick="pressKey('.')">.</button>
-      <button class="key-btn" onclick="pressKey('0')">0</button>
-      <button class="key-btn action" onclick="pressKey('DEL')">⌫</button>
-      <button class="key-btn" onclick="pressKey('-')">-</button>
-      <button class="key-btn hint" onclick="useHint()">힌트</button>
-      <button class="key-btn submit" onclick="submitAnswer()">확인</button>
+    <div class="keypad-container">
+      <div class="keypad">
+        <button class="key-btn" onclick="pressKey('1')">1</button>
+        <button class="key-btn" onclick="pressKey('2')">2</button>
+        <button class="key-btn" onclick="pressKey('3')">3</button>
+        <button class="key-btn" onclick="pressKey('4')">4</button>
+        <button class="key-btn" onclick="pressKey('5')">5</button>
+        <button class="key-btn" onclick="pressKey('6')">6</button>
+        <button class="key-btn" onclick="pressKey('7')">7</button>
+        <button class="key-btn" onclick="pressKey('8')">8</button>
+        <button class="key-btn" onclick="pressKey('9')">9</button>
+        <button class="key-btn pass" onclick="passQuestion()">포기</button>
+        <button class="key-btn" onclick="pressKey('0')">0</button>
+        <button class="key-btn action" onclick="pressKey('DEL')">⌫</button>
+      </div>
+      <div class="button-column">
+        <button class="key-btn hint" onclick="useHint()">힌트</button>
+        <button class="key-btn submit" onclick="submitAnswer()">확인</button>
+      </div>
     </div>
   </div>
 
@@ -315,6 +367,7 @@
     let highlightedTiles = [];
     let score = 0;
     let hints = 3;
+    let combo = 0;
     
     let isSolving = false;
     let isSwapping = false;
@@ -348,65 +401,60 @@
       return rounded.toString();
     }
 
-    function normalizeAnswer(str) {
-      if (!str) return "";
-      
-      // "-0" → "0" 처리
-      if (str === "-0" || str === "-0.0") return "0";
-      
-      // 음수 처리: -091 → -91
-      if (str.startsWith('-')) {
-        const absStr = str.slice(1);
-        const dotIdx = absStr.indexOf('.');
-        
-        if (dotIdx === -1) {
-          // 정수: -091 → -91
-          const trimmed = absStr.replace(/^0+/, '');
-          return (trimmed || '0') === '0' ? '0' : '-' + (trimmed || '0');
-        } else {
-          // 소수: -091.5 → -91.5
-          const intPart = absStr.slice(0, dotIdx).replace(/^0+/, '') || '0';
-          const decPart = absStr.slice(dotIdx);
-          const result = intPart + decPart;
-          return result === '0' || result === '0.0' ? '0' : '-' + result;
-        }
-      }
-      
-      // 양수 처리: 091 → 91, 091.5 → 91.5
-      const dotIdx = str.indexOf('.');
-      if (dotIdx === -1) {
-        // 정수: 091 → 91
-        return str.replace(/^0+/, '') || '0';
+    function normalizeAnswer(answerStr) {
+      // 선행 0 제거 (예: "091" → "91", "-091" → "-91")
+      if (!answerStr.includes('.')) {
+        // 정수 처리
+        const isNegative = answerStr.startsWith('-');
+        let numPart = isNegative ? answerStr.slice(1) : answerStr;
+        const normalized = parseInt(numPart, 10).toString();
+        return isNegative ? '-' + normalized : normalized;
       } else {
-        // 소수: 091.5 → 91.5
-        const intPart = str.slice(0, dotIdx).replace(/^0+/, '') || '0';
-        const decPart = str.slice(dotIdx);
-        return intPart + decPart;
+        // 소수 처리
+        const [intPart, decPart] = answerStr.split('.');
+        const isNegative = intPart.startsWith('-');
+        const numPart = isNegative ? intPart.slice(1) : intPart;
+        const normalized = parseInt(numPart, 10).toString();
+        const result = isNegative ? '-' + normalized : normalized;
+        return result + '.' + decPart;
       }
     }
 
-    function displayToTwoDecimals(rawVal) {
-      // 원본 정확한 값을 둘째자리까지 표시
+    function displayToOneDecimal(rawVal) {
+      // 소수점 첫째 자리까지만 표시 (절단)
       if (rawVal === undefined || isNaN(rawVal)) return '';
       
       if (Number.isInteger(rawVal)) {
         return rawVal.toString();
       }
       
-      // 둘째자리까지만 표시 (반올림하지 않고 절단)
+      // 첫째 자리까지만 표시 (절단)
       const str = rawVal.toString();
       if (str.includes('.')) {
         const [intPart, decPart] = str.split('.');
-        const displayDec = decPart.length > 2 ? decPart.substring(0, 2) : decPart;
+        const displayDec = decPart.length > 0 ? decPart.substring(0, 1) : '0';
         return intPart + '.' + displayDec;
       }
       
       return str;
     }
 
+    let pendingBoardSize = null;
+
     function changeBoardSize(size) {
       if (BOARD_SIZE === size) return;
       
+      // 게임 중이면 확인
+      if (score > 0 || combo > 0) {
+        pendingBoardSize = size;
+        document.getElementById('sizeChangeModal').style.display = 'flex';
+        return;
+      }
+      
+      executeSizeChange(size);
+    }
+
+    function executeSizeChange(size) {
       BOARD_SIZE = size;
       boardEl.style.setProperty('--board-size', size);
 
@@ -416,11 +464,133 @@
 
       score = 0;
       hints = 3;
+      combo = 0;
       document.getElementById('score').innerText = score;
       document.getElementById('hint-count').innerText = hints;
+      resetCombo();
       
       resetQuestionStateWithoutRender(); 
       initBoard(); 
+    }
+
+    function confirmSizeChange() {
+      document.getElementById('sizeChangeModal').style.display = 'none';
+      if (pendingBoardSize !== null) {
+        executeSizeChange(pendingBoardSize);
+        pendingBoardSize = null;
+      }
+    }
+
+    function cancelSizeChange() {
+      document.getElementById('sizeChangeModal').style.display = 'none';
+      pendingBoardSize = null;
+    }
+
+    function passQuestion() {
+      if (!isSolving) return;
+      document.getElementById('passModal').style.display = 'flex';
+    }
+
+    function confirmPass() {
+      document.getElementById('passModal').style.display = 'none';
+      // 점수 절반 감소 (반내림)
+      const lostScore = Math.floor(score / 2);
+      score -= lostScore;
+      document.getElementById('score').innerText = score;
+      if (lostScore > 0) {
+        showToast(`-${lostScore}점 (포기)`, 'warn');
+      }
+      resetCombo();
+      resetQuestionState();
+    }
+
+    function cancelPass() {
+      document.getElementById('passModal').style.display = 'none';
+    }
+
+    function showCalculation(expression, result) {
+      // 수식을 파싱해서 계산 과정 표시
+      const steps = parseCalculation(expression, result);
+      const stepsEl = document.getElementById('calculationSteps');
+      stepsEl.innerHTML = '';
+      
+      let delay = 0;
+      steps.forEach((step, idx) => {
+        const stepEl = document.createElement('div');
+        stepEl.textContent = step;
+        stepEl.style.opacity = '0';
+        stepEl.style.transition = 'opacity 0.5s ease';
+        stepsEl.appendChild(stepEl);
+        
+        setTimeout(() => {
+          stepEl.style.opacity = '1';
+        }, delay);
+        delay += 600;
+      });
+      
+      document.getElementById('calculationModal').style.display = 'flex';
+    }
+
+    function parseCalculation(expr, result) {
+      const steps = [];
+      let current = 0;
+      let operator = '+';
+      let numStr = '';
+      let stepNum = 1;
+      let prevOperand = '';
+      
+      for (let i = 0; i < expr.length; i++) {
+        const ch = expr[i];
+        if (/[0-9]/.test(ch)) {
+          numStr += ch;
+        } else if ('+-*/'.includes(ch)) {
+          if (numStr) {
+            const num = parseInt(numStr, 10);
+            if (stepNum === 1) {
+              // 첫 번째 숫자
+              current = num;
+              prevOperand = num.toString();
+            } else {
+              // 계산 수행
+              let calculated;
+              if (operator === '+') calculated = current + num;
+              else if (operator === '-') calculated = current - num;
+              else if (operator === '*') calculated = current * num;
+              else if (operator === '/') calculated = Math.floor(current / num);
+              
+              steps.push(`Step ${stepNum}: ${current} ${operator} ${num} = ${calculated}`);
+              current = calculated;
+              stepNum++;
+            }
+          }
+          operator = ch;
+          numStr = '';
+        }
+      }
+      
+      // 마지막 숫자 처리
+      if (numStr) {
+        const num = parseInt(numStr, 10);
+        let calculated;
+        if (operator === '+') calculated = current + num;
+        else if (operator === '-') calculated = current - num;
+        else if (operator === '*') calculated = current * num;
+        else if (operator === '/') calculated = Math.floor(current / num);
+        
+        if (stepNum === 1) {
+          // 수식이 숫자 하나만 있는 경우
+          steps.push(`최종값: ${num}`);
+        } else {
+          steps.push(`Step ${stepNum}: ${current} ${operator} ${num} = ${calculated}`);
+        }
+      }
+      
+      steps.push(`답: ${result}`);
+      return steps;
+    }
+
+    function closeCalculation() {
+      document.getElementById('calculationModal').style.display = 'none';
     }
 
     function isValidBoard() {
@@ -662,62 +832,57 @@
     function parseEquation(lineArray, coordBuilder, targetIdx) {
       const lineStr = lineArray.join('');
       
-      // 1단계: 라인에서 숫자와 연산자만 추출 (문자 전부 제거)
+      // 단계 1: 숫자와 연산자만 추출 (문자 전부 제거)
       let cleanedStr = '';
-      let posMap = []; // cleanedStr의 각 문자가 원본 lineStr의 어느 위치인지
+      let posMap = [];
       
       for (let i = 0; i < lineStr.length; i++) {
         const ch = lineStr[i];
-        
         // / 앞에 숫자가 없으면 건너뜀
-        if (ch === '/' && (cleanedStr.length === 0 || !/[0-9]$/.test(cleanedStr))) {
-          continue;
-        }
-        
+        if (ch === '/' && (cleanedStr.length === 0 || !/[0-9]$/.test(cleanedStr))) continue;
         if (/[0-9\+\-\*\/]/.test(ch)) {
           cleanedStr += ch;
           posMap.push(i);
         }
       }
       
-      // 2단계: cleanedStr에서 수식 찾기 (첫 번째 수식 플레이)
+      // 단계 2: cleanedStr에서 수식 찾기 (첫 유효 수식 플레이)
       const regex = /([0-9]+(?:[\+\-\*\/][0-9]+)+)/g;
       let match;
-
+      
       while ((match = regex.exec(cleanedStr)) !== null) {
         const matchStart = match.index;
         const matchLen = match[0].length;
         const rawExpr = match[0];
-
-        // 0으로 나누기 체크
-        if (/\/0(?![0-9])/.test(rawExpr)) {
-          continue;
-        }
-
-        // 계산
+        
+        // 0 나누기 체크
+        if (/\/0(?![0-9])/.test(rawExpr)) continue;
+        
+        // 선행 0 제거
         const sanitizedExpr = rawExpr.replace(/(^|[\+\-\*\/])0+([0-9]+)/g, '$1$2');
+        
+        // 계산
         let rawVal;
         try {
           rawVal = Function(`"use strict"; return (${sanitizedExpr})`)();
         } catch(e) { continue; }
-
+        
         if (rawVal === undefined || isNaN(rawVal) || !isFinite(rawVal)) continue;
-
-        const targetAnsStr = roundToOneDecimal(rawVal);
-
-        // 3단계: 원본 라인에서 하이라이트 좌표 계산
+        
+        const targetAnsStr = displayToOneDecimal(rawVal);
+        
+        // 타일 하이라이트 (원본 posMap 사용)
         highlightedTiles = [];
         for (let i = 0; i < matchLen; i++) {
-          const origPos = posMap[matchStart + i];
-          highlightedTiles.push(coordBuilder(origPos));
+          highlightedTiles.push(coordBuilder(posMap[matchStart + i]));
         }
-
-        // rawExpr도 정규화
+        
+        // 정규화된 rawExpr로 시작
         const normalizedExpr = rawExpr.replace(/(^|[\+\-\*\/])0+([0-9]+)/g, '$1$2');
         startQuestionMode(normalizedExpr, targetAnsStr, rawVal);
         return { success: true };
       }
-
+      
       return { success: false, reason: 'NO_EQ' };
     }
 
@@ -731,60 +896,75 @@
 
       const hasMultOrDiv = rawExpr.includes('*') || rawExpr.includes('/');
       
-      if (!hasMultOrDiv) {
-        renderBoard();
-        updateQuestionUI();
-        startTimer(highlightedTiles.length);
-        return;
-      }
-
       // 마스킹 규칙
       const decimalIndex = targetAnsStr.indexOf('.');
       let hiddenIndices = new Set();
       
-      if (decimalIndex !== -1) {
-        // 소수점 있음: 소수점 뒤 첫 1자리만 입력
-        hiddenIndices.add(decimalIndex + 1);
+      if (hasMultOrDiv) {
+        // 곱셈/나눗셈 있음: 기존 규칙
+        if (decimalIndex !== -1) {
+          // 소수점 있음: 소수점 뒤 첫 유의미한 1자리만 입력 (leading zero 무시)
+          let firstSignificantIdx = -1;
+          for (let i = decimalIndex + 1; i < targetAnsStr.length; i++) {
+            if (targetAnsStr[i] !== '0') {
+              firstSignificantIdx = i;
+              break;
+            }
+          }
+          // 유의미한 숫자가 없으면 (예: 0.000), 첫 1자리
+          if (firstSignificantIdx === -1) {
+            hiddenIndices.add(decimalIndex + 1);
+          } else {
+            hiddenIndices.add(firstSignificantIdx);
+          }
+        } else {
+          // 정수만 있음: 자리수에 따라 다름
+          const integerStr = targetAnsStr.replace(/^-/, ''); // 음수 기호 제거
+          const digitCount = integerStr.length;
+          
+          if (digitCount === 2) {
+            // 2자리: 전부 입력
+            for (let i = 0; i < targetAnsStr.length; i++) {
+              if (/[0-9]/.test(targetAnsStr[i])) {
+                hiddenIndices.add(i);
+              }
+            }
+          } else if (digitCount === 3) {
+            // 3자리: 1칸 랜덤
+            const digitIndices = [];
+            for (let i = 0; i < targetAnsStr.length; i++) {
+              if (/[0-9]/.test(targetAnsStr[i])) {
+                digitIndices.push(i);
+              }
+            }
+            const randomIdx = Math.floor(Math.random() * digitIndices.length);
+            hiddenIndices.add(digitIndices[randomIdx]);
+          } else if (digitCount >= 4) {
+            // 4자리 이상: 2칸 랜덤
+            const digitIndices = [];
+            for (let i = 0; i < targetAnsStr.length; i++) {
+              if (/[0-9]/.test(targetAnsStr[i])) {
+                digitIndices.push(i);
+              }
+            }
+            const shuffled = [...digitIndices].sort(() => Math.random() - 0.5);
+            hiddenIndices.add(shuffled[0]);
+            hiddenIndices.add(shuffled[1]);
+          }
+        }
       } else {
-        // 정수만 있음: 자리수에 따라 다름
-        const integerStr = targetAnsStr.replace(/^-/, ''); // 음수 기호 제거
-        const digitCount = integerStr.length;
-        
-        if (digitCount === 2) {
-          // 2자리: 전부 입력
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              hiddenIndices.add(i);
-            }
+        // 곱셈/나눗셈 없음: 숫자만 숨김 (마이너스와 소수점은 자동 표시)
+        for (let i = 0; i < targetAnsStr.length; i++) {
+          if (/[0-9]/.test(targetAnsStr[i])) {
+            hiddenIndices.add(i);
           }
-        } else if (digitCount === 3) {
-          // 3자리: 1칸 랜덤
-          const digitIndices = [];
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              digitIndices.push(i);
-            }
-          }
-          const randomIdx = Math.floor(Math.random() * digitIndices.length);
-          hiddenIndices.add(digitIndices[randomIdx]);
-        } else if (digitCount >= 4) {
-          // 4자리 이상: 2칸 랜덤
-          const digitIndices = [];
-          for (let i = 0; i < targetAnsStr.length; i++) {
-            if (/[0-9]/.test(targetAnsStr[i])) {
-              digitIndices.push(i);
-            }
-          }
-          const shuffled = [...digitIndices].sort(() => Math.random() - 0.5);
-          hiddenIndices.add(shuffled[0]);
-          hiddenIndices.add(shuffled[1]);
         }
       }
 
       if (hiddenIndices.size > 0) {
         maskInfo = {
           hiddenIndices: hiddenIndices,
-          userInputs: []
+          userInputs: {} // 배열에서 객체로 변경 (인덱스별 매핑)
         };
       }
 
@@ -797,25 +977,24 @@
       const displayExpr = currentEq ? currentEq.rawExpr.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ').replace(/\+/g, ' + ').replace(/\-/g, ' - ') : '';
       
       let answerHtml = "";
-      let inputIdx = 0;
 
       if (maskInfo) {
-        // 마스킹이 있을 때: ? 또는 숫자 표시
+        // 마스킹이 있을 때: _ (언더바) 또는 숫자 표시 (인덱스 기반)
         for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
           const char = currentEq.targetAnsStr[i];
           if (maskInfo.hiddenIndices.has(i)) {
-            // 입력해야 할 부분: 사용자 입력 또는 ?
-            const val = maskInfo.userInputs[inputIdx] || '?';
+            // 입력해야 할 부분: 공개된 값 또는 _ (언더바)
+            const val = maskInfo.userInputs[i] !== undefined ? maskInfo.userInputs[i] : '_';
             answerHtml += `<span class="mask-char mask-hidden">${val}</span>`;
-            inputIdx++;
           } else {
-            // 보여줄 부분: 그대로 표시
+            // 보여줄 부분: 그대로 표시 (마이너스 포함)
             answerHtml += `<span class="mask-char">${char}</span>`;
           }
         }
       } else {
-        // 마스킹이 없을 때 (사용자 입력칸)
-        answerHtml = `<span class="user-answer">${userInput || '?'}</span>`;
+        // maskInfo가 없으면 전체 언더바 표시
+        const underscores = currentEq ? currentEq.targetAnsStr.split('').map(c => '_').join('') : '?';
+        answerHtml = `<span class="user-answer">${underscores}</span>`;
       }
 
       eqDisplayEl.innerHTML = `
@@ -823,7 +1002,7 @@
           <span>${displayExpr} = </span>
           <span>${answerHtml}</span>
         </div>
-        <div class="equation-subtext">(소수점 둘째 자리에서 반올림)</div>
+        ${currentEq && currentEq.targetAnsStr.includes('.') ? '<div class="equation-subtext">(소수점 첫째 자리까지 표시)</div>' : ''}
       `;
     }
 
@@ -831,11 +1010,9 @@
       if (!maskInfo) return userInput;
 
       let result = "";
-      let inputIdx = 0;
       for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
         if (maskInfo.hiddenIndices.has(i)) {
-          result += maskInfo.userInputs[inputIdx] || "";
-          inputIdx++;
+          result += maskInfo.userInputs[i] || "";
         } else {
           result += currentEq.targetAnsStr[i];
         }
@@ -847,11 +1024,26 @@
       if (!isSolving) return;
 
       if (maskInfo) {
+        // 숫자만 입력받기 (마이너스와 소수점은 자동 표시)
         if (key === 'DEL') {
-          maskInfo.userInputs.pop();
+          // 마지막 입력된 인덱스 찾아서 삭제
+          let lastIdx = -1;
+          for (let i = currentEq.targetAnsStr.length - 1; i >= 0; i--) {
+            if (maskInfo.userInputs[i] !== undefined) {
+              lastIdx = i;
+              break;
+            }
+          }
+          if (lastIdx !== -1) {
+            delete maskInfo.userInputs[lastIdx];
+          }
         } else if (/[0-9]/.test(key)) {
-          if (maskInfo.userInputs.length < maskInfo.hiddenIndices.size) {
-            maskInfo.userInputs.push(key);
+          // 첫 번째 빈 인덱스에 입력
+          for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
+            if (maskInfo.hiddenIndices.has(i) && maskInfo.userInputs[i] === undefined) {
+              maskInfo.userInputs[i] = key;
+              break;
+            }
           }
         }
       } else {
@@ -919,13 +1111,16 @@
         qBox.classList.remove('shake'); void qBox.offsetWidth; qBox.classList.add('shake');
         setTimeout(()=> qBox.classList.remove('shake'), 420);
         resetCombo();
-        showToast('오답입니다!', 'warn');
+        showToast('오답입니다! 다시 시도하세요.', 'warn');
+        
+        // 입력 상태로 복구 (다시 입력 기회 제공)
         if (maskInfo) {
-          maskInfo.userInputs = [];
+          maskInfo.userInputs = {};
         } else {
           userInput = "";
         }
         updateQuestionUI();
+        // 계속 입력할 수 있음 (resetQuestionState 호출 안 함)
       }
     }
 
@@ -935,16 +1130,24 @@
       document.getElementById('hint-count').innerText = hints;
       playSfx('hint');
 
-      // 한 번에 정답을 전부 보여주지 않고, 힌트 1회당 한 글자씩만 점진적으로 공개한다
+      // 힌트 1회당 한 글자씩 점진적으로 공개 (빈칸 중 가장 낮은 자리수부터)
       if (maskInfo) {
         const need = [];
+        // 앞에서부터 순회하면서 hiddenIndices에서 수집 (작은 인덱스부터)
         for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
-          if (maskInfo.hiddenIndices.has(i)) need.push(i);
+          if (maskInfo.hiddenIndices.has(i)) {
+            need.push(i);
+          }
         }
-        const filled = maskInfo.userInputs.length;
-        if (filled < need.length) {
-          const idx = need[filled];
-          maskInfo.userInputs.push(currentEq.targetAnsStr[idx]);
+        // 역순 정렬 (큰 인덱스=낮은 자리수 먼저)
+        need.reverse();
+        
+        // 공개되지 않은 인덱스 찾기
+        const unrevealed = need.filter(idx => maskInfo.userInputs[idx] === undefined);
+        
+        if (unrevealed.length > 0) {
+          const idx = unrevealed[0];
+          maskInfo.userInputs[idx] = currentEq.targetAnsStr[idx];
         }
       } else {
         const target = currentEq.targetAnsStr;
@@ -987,8 +1190,39 @@
           clearInterval(timerInterval);
           playSfx('fail');
           resetCombo();
-          showToast('시간 초과! 턴이 넘어갑니다.', 'warn');
-          resetQuestionState();
+          showToast('시간 초과! 정답을 표시합니다.', 'warn');
+          
+          // 정답을 크게 1초간 표시
+          isSolving = false; // 더 이상 입력 받지 않기
+          const answerDisplay = document.querySelector('.question-box .user-answer') || 
+                                document.querySelector('.question-box');
+          if (answerDisplay) {
+            answerDisplay.style.fontSize = '2.5em';
+            answerDisplay.style.fontWeight = 'bold';
+            answerDisplay.style.color = '#ef4444';
+          }
+          
+          // 정답 표시
+          if (maskInfo) {
+            // 모든 답을 보이게
+            for (let i = 0; i < currentEq.targetAnsStr.length; i++) {
+              maskInfo.userInputs[i] = currentEq.targetAnsStr[i];
+            }
+          } else {
+            userInput = currentEq.targetAnsStr;
+          }
+          updateQuestionUI();
+          
+          // 모든 경우 계산 과정 표시
+          showCalculation(currentEq.rawExpr, currentEq.targetAnsStr);
+          
+          // 1초 후 다음 턴으로
+          setTimeout(() => {
+            answerDisplay.style.fontSize = '';
+            answerDisplay.style.fontWeight = '';
+            answerDisplay.style.color = '';
+            resetQuestionState();
+          }, 1000);
         }
       }, 100);
     }
@@ -1019,14 +1253,27 @@
     }
 
     async function clearTiles(tiles) {
-      // 즉시 교체하지 않고, 파괴 -> 새 블록 등장 순으로 눈에 보이게 처리한다
+      // 제거 타일 pop-out
       const els = tiles.map(t => getTileEl(t.r, t.c)).filter(Boolean);
       els.forEach(el => el.classList.add('pop-out'));
       await new Promise(res => setTimeout(res, 260));
 
-      tiles.forEach(t => {
-        boardData[t.r][t.c] = getRandomValue();
-      });
+      // 데이터 업데이트 (지워진 열별로 블록 이동)
+      const clearedCols = new Set(tiles.map(t => t.c));
+      
+      for (const col of clearedCols) {
+        const gapInCol = tiles.filter(t => t.c === col).length;
+        
+        // 이 열에서만: 블록 아래로 이동
+        for (let r = BOARD_SIZE - 1 - gapInCol; r >= 0; r--) {
+          boardData[r + gapInCol][col] = boardData[r][col];
+        }
+        
+        // 맨 위 새 블록
+        for (let r = 0; r < gapInCol; r++) {
+          boardData[r][col] = getRandomValue();
+        }
+      }
 
       if (!isValidBoard()) {
         initBoard();
@@ -1034,11 +1281,41 @@
         return;
       }
 
+      // 보드 렌더링
       renderBoard();
-      tiles.forEach(t => {
-        const el = getTileEl(t.r, t.c);
-        if (el) el.classList.add('pop-in');
-      });
+
+      // renderBoard 후 떨어져야 할 블록들을 다시 위에 배치
+      await new Promise(res => setTimeout(res, 10));
+      
+      for (const col of clearedCols) {
+        const gapInCol = tiles.filter(t => t.c === col).length;
+        for (let r = gapInCol; r < BOARD_SIZE; r++) {
+          const el = getTileEl(r, col);
+          if (el) el.style.transform = 'translateY(-100%)';
+        }
+      }
+
+      // Fall 애니메이션 시작
+      await new Promise(res => setTimeout(res, 40));
+      
+      for (const col of clearedCols) {
+        const gapInCol = tiles.filter(t => t.c === col).length;
+        
+        // 떨어진 블록들
+        for (let r = gapInCol; r < BOARD_SIZE; r++) {
+          const el = getTileEl(r, col);
+          if (el) {
+            el.style.animationDelay = `${(r - gapInCol) * 60}ms`;
+            el.classList.add('fall');
+          }
+        }
+        
+        // 새 블록들 (pop-in)
+        for (let r = 0; r < gapInCol; r++) {
+          const el = getTileEl(r, col);
+          if (el) el.classList.add('pop-in');
+        }
+      }
     }
 
     /* ============================================================
@@ -1136,7 +1413,6 @@
       requestAnimationFrame(()=> t.classList.add('show'));
       setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=> t.remove(), 300); }, 1800);
     }
-    let combo = 0;
     function showCenterPopup(text, type) {
       const popup = document.getElementById('centerPopup');
       if (!popup) return;
@@ -1150,6 +1426,14 @@
     }
     function bumpCombo(){
       combo++;
+      
+      // 3콤보마다 1힌트 지급
+      if (combo % 3 === 0) {
+        hints++;
+        document.getElementById('hint-count').innerText = hints;
+        showToast('💡 힌트 획득!', 'success');
+      }
+      
       const badge = document.getElementById('comboBadge');
       if(!badge) return;
       if(combo>=2){
@@ -1163,6 +1447,27 @@
       const badge = document.getElementById('comboBadge');
       if(badge) badge.classList.remove('show');
     }
+
+    // 키보드 입력 지원
+    document.addEventListener('keydown', (e) => {
+      if (!isSolving) return;
+      
+      // 숫자 키 (0-9)
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault();
+        pressKey(e.key);
+      }
+      // 백스페이스 (삭제)
+      else if (e.key === 'Backspace') {
+        e.preventDefault();
+        pressKey('DEL');
+      }
+      // 엔터 (확인/제출)
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        submitAnswer();
+      }
+    });
 
     initBoard();
   </script>
