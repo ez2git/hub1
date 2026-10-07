@@ -33,7 +33,7 @@
       display: flex; 
       flex-direction: column; 
       gap: 4px; 
-      margin: auto 0;
+      margin: auto;
     }
 
     .size-selector {
@@ -82,6 +82,7 @@
     }
     .game-header > div:last-child {
       flex: 0 0 auto;
+      text-align: right;
     }
     
     .question-box { 
@@ -266,18 +267,82 @@
     .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .modal-btn.confirm { background: #4caf50; color: white; }
     .modal-btn.cancel { background: #e0e0e0; color: #333; }
+    
+    /* 화면 전환 */
+    .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    /* 타이틀 화면 */
+    #titleScreen { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .title-content { text-align: center; color: white; }
+    .title-logo { font-size: 4em; margin-bottom: 20px; animation: bounce 1s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    .title-subtitle { font-size: 18px; margin-bottom: 40px; opacity: 0.9; }
+    .mode-selector { display: flex; flex-direction: column; gap: 15px; }
+    .mode-label { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+    .mode-btn { background: rgba(255,255,255,0.2); border: 2px solid white; color: white; padding: 15px 25px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; justify-content: center; transition: all 0.3s; }
+    .mode-btn:hover { background: rgba(255,255,255,0.4); transform: scale(1.05); }
+    .mode-emoji { font-size: 24px; }
+    
+    /* 게임 화면 */
+    #gameScreen { background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50; }
+    
+    /* 결과 화면 */
+    #resultScreen { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); display: flex; align-items: center; justify-content: center; z-index: 100; }
+    .result-content { background: white; border-radius: 20px; padding: 40px; text-align: center; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+    .result-header { font-size: 32px; margin-bottom: 30px; font-weight: 700; }
+    .result-score { margin: 30px 0; }
+    .score-label { font-size: 16px; color: #666; margin-bottom: 10px; }
+    .score-value { font-size: 56px; font-weight: 700; color: #f5576c; }
+    .score-unit { font-size: 18px; color: #999; }
+    .result-info { margin: 30px 0; text-align: left; background: #f9f9f9; padding: 20px; border-radius: 12px; }
+    .result-info p { margin: 0 0 15px 0; font-size: 14px; color: #666; }
+    .name-input-group { margin-top: 15px; }
+    .name-input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #333; }
+    .name-input-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+    .result-buttons { display: flex; gap: 12px; margin-top: 30px; }
+    .result-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .result-btn:first-child { background: #667eea; color: white; }
+    .result-btn:first-child:hover { background: #5568d3; }
+    .result-btn:last-child { background: #f5576c; color: white; }
+    .result-btn:last-child:hover { background: #e23d52; }
   </style>
 </head>
 <body>
 
-  <div id="centerPopup"></div>
+  <!-- 타이틀 화면 -->
+  <div id="titleScreen" class="screen" style="display:flex;">
+    <div class="title-content">
+      <div class="title-logo">🧮 암산배틀 🧮</div>
+      <div class="title-subtitle">빠르게 계산하고 점수를 쌓아라!</div>
+      <div class="mode-selector">
+        <div class="mode-label">게임 모드 선택</div>
+        <button class="mode-btn" onclick="startGame(4)">
+          <span class="mode-emoji">📦</span>
+          <span>4×4 칸판</span>
+        </button>
+        <button class="mode-btn" onclick="startGame(5)">
+          <span class="mode-emoji">📊</span>
+          <span>5×5 칸판</span>
+        </button>
+        <button class="mode-btn" onclick="startGame(6)">
+          <span class="mode-emoji">🎮</span>
+          <span>6×6 칸판</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="gameScreen" class="screen" style="display:none;">
+    <div id="centerPopup"></div>
 
   <!-- 보드 크기 변경 확인 모달 -->
   <!-- 포기 확인 모달 -->
   <div id="passModal" class="modal" style="display:none;">
     <div class="modal-content">
       <h3>문제 포기</h3>
-      <p>해당 문제를 포기하시겠습니까?<br>포기하시면 현재 점수의 절반을 잃습니다.</p>
+      <p>해당 문제를 포기하시겠습니까?<br>포기하시면 힌트 1개를 소모합니다.</p>
       <div class="modal-buttons">
         <button class="modal-btn confirm" onclick="confirmPass()">예</button>
         <button class="modal-btn cancel" onclick="cancelPass()">아니오</button>
@@ -318,7 +383,7 @@
         <div>점수: <span id="score">0</span>점</div>
         <span class="combo-badge" id="comboBadge"></span>
       </div>
-      <div style="width:40px;"></div>
+      <div style="font-size:13px; font-weight:600; color:#667eea;">ROUND <span id="currentRound">1</span>/20</div>
     </div>
 
     <div class="question-box">
@@ -357,17 +422,50 @@
   </div>
 
   <div id="toastWrap"></div>
+  </div> <!-- gameScreen 종료 -->
+
+  <!-- 결과 화면 -->
+  <div id="resultScreen" class="screen" style="display:none;">
+    <div class="result-content">
+      <div class="result-header">🎉 게임 완료! 🎉</div>
+      <div class="result-score">
+        <div class="score-label">최종 점수</div>
+        <div id="finalScore" class="score-value">0</div>
+        <div class="score-unit">점</div>
+      </div>
+      <div class="result-info">
+        <p>20라운드를 모두 완료했습니다!</p>
+        <div class="name-input-group">
+          <label>닉네임 입력</label>
+          <input type="text" id="playerNameInput" placeholder="닉네임을 입력하세요" maxlength="20">
+        </div>
+      </div>
+      <div class="result-buttons">
+        <button class="result-btn" onclick="saveScoreAndViewRanking()">랭킹 보기</button>
+        <button class="result-btn" onclick="goToTitle()">처음부터 시작</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     let BOARD_SIZE = 6; 
     const NUMBERS = ['0','1','2','3','4','5','6','7','8','9'];
     const OPERATORS = ['+','-','*','/'];
     
+    // 각 판 크기별 블록 데이터 독립 저장
+    let boardDataBySize = { 4: null, 5: null, 6: null };
     let boardData = [];
     let highlightedTiles = [];
     let score = 0;
     let hints = 3;
     let combo = 0;
+    
+    // 게임 상태
+    let gameState = 'title'; // 'title' | 'playing' | 'result'
+    let currentRound = 1;
+    let totalRounds = 20;
+    let selectedBoardSize = 4;
+    let playerName = '';
     
     let isSolving = false;
     let isSwapping = false;
@@ -420,20 +518,22 @@
       }
     }
 
-    function displayToOneDecimal(rawVal) {
-      // 소수점 첫째 자리까지만 표시 (절단)
+    function displayToTwoDecimals(rawVal) {
+      // 소수점 둘째 자리에서 반올림 후, 첫째까지만 표시
       if (rawVal === undefined || isNaN(rawVal)) return '';
       
       if (Number.isInteger(rawVal)) {
         return rawVal.toString();
       }
       
-      // 첫째 자리까지만 표시 (절단)
-      const str = rawVal.toString();
+      // 둘째 자리에서 반올림
+      const rounded = Math.round(rawVal * 100) / 100;
+      const str = rounded.toString();
+      
+      // 소수점이 있으면 첫째까지만 추출
       if (str.includes('.')) {
         const [intPart, decPart] = str.split('.');
-        const displayDec = decPart.length > 0 ? decPart.substring(0, 1) : '0';
-        return intPart + '.' + displayDec;
+        return intPart + '.' + decPart.charAt(0);
       }
       
       return str;
@@ -443,14 +543,6 @@
 
     function changeBoardSize(size) {
       if (BOARD_SIZE === size) return;
-      
-      // 게임 중이면 확인
-      if (score > 0 || combo > 0) {
-        pendingBoardSize = size;
-        document.getElementById('sizeChangeModal').style.display = 'flex';
-        return;
-      }
-      
       executeSizeChange(size);
     }
 
@@ -461,16 +553,18 @@
       document.querySelectorAll('.size-btn').forEach(btn => {
         btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
       });
-
-      score = 0;
-      hints = 3;
-      combo = 0;
-      document.getElementById('score').innerText = score;
-      document.getElementById('hint-count').innerText = hints;
-      resetCombo();
       
+      // 판 크기별 데이터 로드 (해당 크기의 블록 배치 복구)
+      if (boardDataBySize[BOARD_SIZE] !== null) {
+        boardData = boardDataBySize[BOARD_SIZE];
+      } else {
+        // 첫 방문 시에만 새로 생성
+        initBoard();
+        return;
+      }
+      
+      // 현재 문제만 리셋
       resetQuestionStateWithoutRender(); 
-      initBoard(); 
     }
 
     function confirmSizeChange() {
@@ -492,14 +586,16 @@
     }
 
     function confirmPass() {
-      document.getElementById('passModal').style.display = 'none';
-      // 점수 절반 감소 (반내림)
-      const lostScore = Math.floor(score / 2);
-      score -= lostScore;
-      document.getElementById('score').innerText = score;
-      if (lostScore > 0) {
-        showToast(`-${lostScore}점 (포기)`, 'warn');
+      // 힌트 1개 소모
+      if (hints <= 0) {
+        showToast('힌트가 없습니다!', 'warn');
+        return;
       }
+      
+      document.getElementById('passModal').style.display = 'none';
+      hints--;
+      document.getElementById('hint-count').innerText = hints;
+      showToast('💡 힌트 1개 소모 (포기)', 'info');
       resetCombo();
       resetQuestionState();
     }
@@ -609,17 +705,99 @@
       return hasOperator && numberCount >= 2;
     }
 
+    // ===== 게임 상태 관리 함수 =====
+    function startGame(size) {
+      selectedBoardSize = size;
+      BOARD_SIZE = size;
+      boardEl.style.setProperty('--board-size', size);
+      
+      // 게임 초기화
+      currentRound = 1;
+      score = 0;
+      hints = 3;
+      combo = 0;
+      gameState = 'playing';
+      
+      // 버튼 상태 업데이트
+      document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.size) === size);
+      });
+      
+      // UI 업데이트
+      document.getElementById('score').innerText = score;
+      document.getElementById('hint-count').innerText = hints;
+      document.getElementById('currentRound').innerText = currentRound;
+      document.getElementById('comboBadge').innerHTML = '';
+      
+      // 화면 전환
+      document.getElementById('titleScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'flex';
+      
+      // 게임 시작
+      initBoard();
+      resetQuestionState();
+    }
+    
+    function goToTitle() {
+      gameState = 'title';
+      currentRound = 1;
+      score = 0;
+      hints = 3;
+      combo = 0;
+      playerName = '';
+      document.getElementById('playerNameInput').value = '';
+      
+      document.getElementById('resultScreen').style.display = 'none';
+      document.getElementById('titleScreen').style.display = 'flex';
+    }
+    
+    function endGame() {
+      gameState = 'result';
+      playerName = document.getElementById('playerNameInput').value || '익명';
+      
+      document.getElementById('gameScreen').style.display = 'none';
+      document.getElementById('resultScreen').style.display = 'flex';
+      document.getElementById('finalScore').innerText = score;
+    }
+    
+    function saveScoreAndViewRanking() {
+      // 로컬스토리지에 점수 저장
+      let rankings = JSON.parse(localStorage.getItem('mathbattle-rankings') || '[]');
+      rankings.push({
+        name: playerName || '익명',
+        score: score,
+        boardSize: selectedBoardSize,
+        date: new Date().toISOString()
+      });
+      // 점수 내림차순 정렬
+      rankings.sort((a, b) => b.score - a.score);
+      // 상위 100개만 유지
+      rankings = rankings.slice(0, 100);
+      localStorage.setItem('mathbattle-rankings', JSON.stringify(rankings));
+      
+      // 랭킹 페이지로 이동
+      window.location.href = 'orange-cat-mathbattle-ranking.html';
+    }
+
     function initBoard() {
-      do {
-        boardData = [];
-        for (let r = 0; r < BOARD_SIZE; r++) {
-          let row = [];
-          for (let c = 0; c < BOARD_SIZE; c++) {
-            row.push(getRandomValue());
+      // 해당 크기의 기존 데이터가 있으면 사용, 없으면 새로 생성
+      if (boardDataBySize[BOARD_SIZE] !== null) {
+        boardData = boardDataBySize[BOARD_SIZE];
+      } else {
+        do {
+          boardData = [];
+          for (let r = 0; r < BOARD_SIZE; r++) {
+            let row = [];
+            for (let c = 0; c < BOARD_SIZE; c++) {
+              row.push(getRandomValue());
+            }
+            boardData.push(row);
           }
-          boardData.push(row);
-        }
-      } while (!isValidBoard());
+        } while (!isValidBoard());
+        
+        // 생성한 데이터 저장
+        boardDataBySize[BOARD_SIZE] = JSON.parse(JSON.stringify(boardData));
+      }
 
       renderBoard();
     }
@@ -846,8 +1024,8 @@
         }
       }
       
-      // 단계 2: cleanedStr에서 수식 찾기 (첫 유효 수식 플레이)
-      const regex = /([0-9]+(?:[\+\-\*\/][0-9]+)+)/g;
+      // 단계 2: cleanedStr에서 수식 찾기 (첫 유효 수식 플레이) - 음수 포함
+      const regex = /(-?[0-9]+(?:[\+\-\*\/]-?[0-9]+)+)/g;
       let match;
       
       while ((match = regex.exec(cleanedStr)) !== null) {
@@ -869,7 +1047,7 @@
         
         if (rawVal === undefined || isNaN(rawVal) || !isFinite(rawVal)) continue;
         
-        const targetAnsStr = displayToOneDecimal(rawVal);
+        const targetAnsStr = displayToTwoDecimals(rawVal);
         
         // 타일 하이라이트 (원본 posMap 사용)
         highlightedTiles = [];
@@ -1002,7 +1180,7 @@
           <span>${displayExpr} = </span>
           <span>${answerHtml}</span>
         </div>
-        ${currentEq && currentEq.targetAnsStr.includes('.') ? '<div class="equation-subtext">(소수점 첫째 자리까지 표시)</div>' : ''}
+        ${currentEq && currentEq.targetAnsStr.includes('.') ? '<div class="equation-subtext">(소수점 둘째 자리에서 반올림)</div>' : ''}
       `;
     }
 
@@ -1104,6 +1282,19 @@
         popScoreText(highlightedTiles[Math.floor(highlightedTiles.length/2)], gainedScore);
 
         clearTiles(highlightedTiles);
+        
+        // 라운드 증가
+        currentRound++;
+        document.getElementById('currentRound').innerText = currentRound;
+        
+        // 20라운드 도달 시 게임 종료
+        if (currentRound > totalRounds) {
+          setTimeout(() => {
+            endGame();
+          }, 1000);
+          return;
+        }
+        
         resetQuestionState();
       } else {
         playSfx('wrong');
@@ -1316,6 +1507,9 @@
           if (el) el.classList.add('pop-in');
         }
       }
+      
+      // 변경된 boardData를 해당 크기에 저장
+      boardDataBySize[BOARD_SIZE] = JSON.parse(JSON.stringify(boardData));
     }
 
     /* ============================================================

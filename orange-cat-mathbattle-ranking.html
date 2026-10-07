@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>암산배틀 랭킹</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    
+    .ranking-container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .ranking-header { text-align: center; margin-bottom: 40px; }
+    .ranking-title { font-size: 32px; font-weight: 700; margin-bottom: 10px; color: #333; }
+    .ranking-subtitle { font-size: 14px; color: #999; }
+    
+    .ranking-tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; }
+    .tab-btn { flex: 1; padding: 12px; background: none; border: none; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; }
+    .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+    .tab-btn:hover { color: #667eea; }
+    
+    .ranking-list { display: none; }
+    .ranking-list.active { display: block; }
+    
+    .ranking-item { display: flex; align-items: center; gap: 15px; padding: 15px; background: #f9f9f9; border-radius: 10px; margin-bottom: 10px; animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    
+    .rank-medal { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; min-width: 40px; }
+    .rank-1 { background: #ffd700; color: white; border-radius: 50%; }
+    .rank-2 { background: #c0c0c0; color: white; border-radius: 50%; }
+    .rank-3 { background: #cd7f32; color: white; border-radius: 50%; }
+    .rank-other { background: #e0e0e0; color: #666; border-radius: 50%; }
+    
+    .rank-info { flex: 1; }
+    .rank-name { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 4px; }
+    .rank-meta { font-size: 12px; color: #999; }
+    
+    .rank-score { font-size: 18px; font-weight: 700; color: #667eea; text-align: right; min-width: 60px; }
+    
+    .empty-message { text-align: center; padding: 40px 20px; color: #999; }
+    
+    .button-group { display: flex; gap: 10px; margin-top: 30px; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn-play { background: #667eea; color: white; }
+    .btn-play:hover { background: #5568d3; }
+    .btn-clear { background: #f5f5f5; color: #666; }
+    .btn-clear:hover { background: #e0e0e0; }
+  </style>
+</head>
+<body>
+  <div class="ranking-container">
+    <div class="ranking-header">
+      <div class="ranking-title">🧮 암산배틀 랭킹</div>
+      <div class="ranking-subtitle">전체 랭킹 및 모드별 점수</div>
+    </div>
+    
+    <div class="ranking-tabs">
+      <button class="tab-btn active" onclick="switchTab('all')">전체</button>
+      <button class="tab-btn" onclick="switchTab('4x4')">4×4</button>
+      <button class="tab-btn" onclick="switchTab('5x5')">5×5</button>
+      <button class="tab-btn" onclick="switchTab('6x6')">6×6</button>
+    </div>
+    
+    <!-- 전체 랭킹 -->
+    <div id="all" class="ranking-list active"></div>
+    
+    <!-- 4×4 모드 -->
+    <div id="4x4" class="ranking-list"></div>
+    
+    <!-- 5×5 모드 -->
+    <div id="5x5" class="ranking-list"></div>
+    
+    <!-- 6×6 모드 -->
+    <div id="6x6" class="ranking-list"></div>
+    
+    <div class="button-group">
+      <button class="btn btn-play" onclick="goToGame()">게임 하기</button>
+      <button class="btn btn-clear" onclick="clearRankings()">초기화</button>
+    </div>
+  </div>
+
+  <script>
+    function getRankings() {
+      return JSON.parse(localStorage.getItem('mathbattle-rankings') || '[]');
+    }
+
+    function formatDate(isoString) {
+      const date = new Date(isoString);
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${month}/${day} ${hours}:${minutes}`;
+    }
+
+    function getMedalClass(rank) {
+      if (rank === 1) return 'rank-1';
+      if (rank === 2) return 'rank-2';
+      if (rank === 3) return 'rank-3';
+      return 'rank-other';
+    }
+
+    function renderRankingList(rankings, containerId) {
+      const container = document.getElementById(containerId);
+      
+      if (rankings.length === 0) {
+        container.innerHTML = '<div class="empty-message">아직 기록이 없습니다.</div>';
+        return;
+      }
+
+      container.innerHTML = rankings.map((item, index) => `
+        <div class="ranking-item" style="animation-delay: ${index * 0.05}s;">
+          <div class="rank-medal ${getMedalClass(index + 1)}">${index + 1}</div>
+          <div class="rank-info">
+            <div class="rank-name">${item.name}</div>
+            <div class="rank-meta">${item.boardSize}×${item.boardSize} • ${formatDate(item.date)}</div>
+          </div>
+          <div class="rank-score">${item.score}</div>
+        </div>
+      `).join('');
+    }
+
+    function switchTab(tab) {
+      // 탭 버튼 활성화
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // 랭킹 리스트 표시
+      document.querySelectorAll('.ranking-list').forEach(list => list.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+
+      // 데이터 업데이트
+      updateRankings(tab);
+    }
+
+    function updateRankings(tab) {
+      const allRankings = getRankings();
+      let filteredRankings = allRankings;
+
+      if (tab === '4x4') {
+        filteredRankings = allRankings.filter(r => r.boardSize === 4);
+      } else if (tab === '5x5') {
+        filteredRankings = allRankings.filter(r => r.boardSize === 5);
+      } else if (tab === '6x6') {
+        filteredRankings = allRankings.filter(r => r.boardSize === 6);
+      }
+
+      // 점수 기준 정렬
+      filteredRankings.sort((a, b) => b.score - a.score);
+      
+      renderRankingList(filteredRankings, tab);
+    }
+
+    function goToGame() {
+      window.location.href = 'orange-cat-mathbattle2.html';
+    }
+
+    function clearRankings() {
+      if (confirm('모든 랭킹을 삭제하시겠습니까?')) {
+        localStorage.removeItem('mathbattle-rankings');
+        location.reload();
+      }
+    }
+
+    // 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+      updateRankings('all');
+    });
+  </script>
+</body>
+</html>
