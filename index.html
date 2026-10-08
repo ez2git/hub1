@@ -149,7 +149,7 @@ html,body{
 #scene-clobby{ padding-top: calc(var(--safe) + 18px); padding-bottom: calc(var(--safe) + 10px); align-items:center;}
 .clobby-topbar{ display:flex; align-items:center; gap:14px; width:690px; margin-bottom:16px;}
 .btn-back{
-  background:var(--panel2); color:#fff; font-weight:800; padding:14px 20px; border-radius:14px; border:none; cursor:pointer; font-size:15px;
+  background:var(--panel2); color:#fff; font-weight:800; padding:6px 8px; border-radius:14px; border:none; cursor:pointer; font-size:15px;
 }
 .char-group{ width:690px; height:290px; border-radius:20px; background:linear-gradient(160deg,#2c355c,#1a2036);
   display:flex; align-items:flex-end; justify-content:center; gap:6px; padding:16px; margin-bottom:18px; border:1px solid rgba(255,255,255,.08); overflow:hidden;}
@@ -312,6 +312,24 @@ html,body{
 }
 .block.item-glow .block-inner img, .block.item-glow .block-inner span{ font-size:40px; }
 @keyframes item-pulse{ 0%,100%{ transform:scale(1);} 50%{transform:scale(1.12);} }
+
+/* it05 (최종 아이템) 특별 효과 */
+.block[data-type="it05"] .block-inner{
+  background:none !important; box-shadow:none !important; border-radius:0;
+  filter: drop-shadow(0 0 20px rgba(201,139,255,.95)) drop-shadow(0 0 40px rgba(201,139,255,.6));
+  animation: it05-premium 1.5s ease-in-out infinite;
+}
+.block[data-type="it05"] .block-inner img, .block[data-type="it05"] .block-inner span{ 
+  font-size:42px; 
+  filter: drop-shadow(0 0 8px rgba(201,139,255,.8));
+}
+@keyframes it05-premium{
+  0%{ transform:scale(1) rotate(0deg); }
+  25%{ transform:scale(1.15) rotate(5deg); }
+  50%{ transform:scale(1.2) rotate(0deg); }
+  75%{ transform:scale(1.15) rotate(-5deg); }
+  100%{ transform:scale(1) rotate(0deg); }
+}
 
 .fx-layer{ position:absolute; inset:0; pointer-events:none; z-index:20; }
 .fx-burst{ position:absolute; width:10px; height:10px; border-radius:50%; background:#fff; opacity:1; }
@@ -1404,6 +1422,7 @@ function causesInitialMatch(r,c,t){
 function createBlockEl(r,c,type,isItem,animateSpawn){
   const el = document.createElement('div');
   el.className='block'+(animateSpawn?' spawn':'')+(isItem?' item-glow':'');
+  el.setAttribute('data-type', type);
   el.style.left = px(c)+'px';
   el.style.top = px(r)+'px';
   const inner = document.createElement('div');
