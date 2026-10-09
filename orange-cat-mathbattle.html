@@ -39,10 +39,12 @@
     .size-selector {
       display: flex;
       justify-content: flex-end;
+      align-items: center;
       gap: 2px;
       background: transparent;
       padding: 0;
       border-radius: 8px;
+      position: relative;
     }
     .size-btn {
       width: 44px;
@@ -71,18 +73,13 @@
       font-size: 13px; 
       padding: 0 2px;
       min-height: 24px;
+      width: 100%;
     }
     .game-header > div:first-child {
       flex: 0 0 auto;
     }
-    .game-header > div:nth-child(2) {
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
     .game-header > div:last-child {
       flex: 0 0 auto;
-      text-align: right;
     }
     
     .question-box { 
@@ -372,18 +369,10 @@
 
   <div class="game-container">
     <div class="size-selector">
+      <span class="combo-badge" id="comboBadge" style="position:relative; top:0; right:0; margin-right:8px;"></span>
       <button class="size-btn" data-size="4" onclick="changeBoardSize(4)">4×4 칸</button>
       <button class="size-btn" data-size="5" onclick="changeBoardSize(5)">5×5 칸</button>
       <button class="size-btn active" data-size="6" onclick="changeBoardSize(6)">6×6 칸</button>
-    </div>
-
-    <div class="game-header">
-      <div>힌트: <span id="hint-count">3</span>개</div>
-      <div style="position:relative; display:flex; align-items:center; justify-content:center; gap:8px;">
-        <div>점수: <span id="score">0</span>점</div>
-        <span class="combo-badge" id="comboBadge"></span>
-      </div>
-      <div style="font-size:13px; font-weight:600; color:#667eea;">ROUND <span id="currentRound">1</span>/20</div>
     </div>
 
     <div class="question-box">
@@ -397,6 +386,13 @@
     <div id="board-wrap">
       <div class="board" id="board"></div>
       <div id="fxLayer"></div>
+    </div>
+
+    <div class="game-header">
+      <div style="position:relative; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <div>점수: <span id="score">0</span>점</div>
+      </div>
+      <div style="font-size:13px; font-weight:600; color:#667eea;">ROUND <span id="currentRound">1</span>/20</div>
     </div>
 
     <div class="keypad-container">
@@ -415,7 +411,7 @@
         <button class="key-btn action" onclick="pressKey('DEL')">⌫</button>
       </div>
       <div class="button-column">
-        <button class="key-btn hint" onclick="useHint()">힌트</button>
+        <button class="key-btn hint" onclick="useHint()">힌트 <span id="hint-count">3</span></button>
         <button class="key-btn submit" onclick="submitAnswer()">확인</button>
       </div>
     </div>
@@ -556,12 +552,16 @@
       
       // 판 크기별 데이터 로드 (해당 크기의 블록 배치 복구)
       if (boardDataBySize[BOARD_SIZE] !== null) {
-        boardData = boardDataBySize[BOARD_SIZE];
+        // 깊은 복사로 로드 - 저장된 데이터 훼손 방지
+        boardData = JSON.parse(JSON.stringify(boardDataBySize[BOARD_SIZE]));
       } else {
         // 첫 방문 시에만 새로 생성
         initBoard();
         return;
       }
+      
+      // 보드 다시 렌더링
+      renderBoard();
       
       // 현재 문제만 리셋
       resetQuestionStateWithoutRender(); 
@@ -782,7 +782,8 @@
     function initBoard() {
       // 해당 크기의 기존 데이터가 있으면 사용, 없으면 새로 생성
       if (boardDataBySize[BOARD_SIZE] !== null) {
-        boardData = boardDataBySize[BOARD_SIZE];
+        // 깊은 복사로 로드 - 저장된 데이터 훼손 방지
+        boardData = JSON.parse(JSON.stringify(boardDataBySize[BOARD_SIZE]));
       } else {
         do {
           boardData = [];
